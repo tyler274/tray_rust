@@ -24,47 +24,53 @@ use std::sync::Arc;
 
 use light_arena::Allocator;
 
+use bxdf::fresnel::Conductor;
+use bxdf::microfacet::Beckmann;
+use bxdf::{BxDF, TorranceSparrow, BSDF};
 use film::Colorf;
 use geometry::Intersection;
-use bxdf::{BxDF, BSDF, TorranceSparrow};
-use bxdf::microfacet::Beckmann;
-use bxdf::fresnel::Conductor;
 use material::Material;
 use texture::Texture;
 
 /// The Metal material describes metals of varying roughness
 pub struct Metal {
-    eta: Arc<Texture + Send + Sync>,
-    k: Arc<Texture + Send + Sync>,
-    roughness: Arc<Texture + Send + Sync>,
+    eta: Arc<dyn Texture + Send + Sync>,
+    k: Arc<dyn Texture + Send + Sync>,
+    roughness: Arc<dyn Texture + Send + Sync>,
 }
 
 impl Metal {
     /// Create a new metal material specifying the reflectance properties of the metal
-    pub fn new(eta: Arc<Texture + Send + Sync>,
-               k: Arc<Texture + Send + Sync>,
-               roughness: Arc<Texture + Send + Sync>) -> Metal
-    {
-        Metal { eta: eta.clone(),
-                k: k.clone(),
-                roughness: roughness.clone()
+    pub fn new(
+        eta: Arc<dyn Texture + Send + Sync>,
+        k: Arc<dyn Texture + Send + Sync>,
+        roughness: Arc<dyn Texture + Send + Sync>,
+    ) -> Metal {
+        Metal {
+            eta: eta.clone(),
+            k: k.clone(),
+            roughness: roughness.clone(),
         }
     }
 }
 
 impl Material for Metal {
-    fn bsdf<'a, 'b, 'c>(&self, hit: &Intersection<'a, 'b>,
-                        alloc: &'c Allocator) -> BSDF<'c> where 'a: 'c {
+    fn bsdf<'a, 'b, 'c>(&self, hit: &Intersection<'a, 'b>, alloc: &'c Allocator) -> BSDF<'c>
+    where
+        'a: 'c,
+    {
         let eta = self.eta.sample_color(hit.dg.u, hit.dg.v, hit.dg.time);
         let k = self.k.sample_color(hit.dg.u, hit.dg.v, hit.dg.time);
         let roughness = self.roughness.sample_f32(hit.dg.u, hit.dg.v, hit.dg.time);
 
-        let bxdfs = alloc.alloc_slice::<&BxDF>(1);
+        let bxdfs = alloc.alloc_slice::<&dyn BxDF>(1);
         let fresnel = alloc.alloc(Conductor::new(&eta, &k));
         let microfacet = alloc.alloc(Beckmann::new(roughness));
-        bxdfs[0] = alloc.alloc(TorranceSparrow::new(&Colorf::broadcast(1.0), fresnel, microfacet));
+        bxdfs[0] = alloc.alloc(TorranceSparrow::new(
+            &Colorf::broadcast(1.0),
+            fresnel,
+            microfacet,
+        ));
         BSDF::new(bxdfs, 1.0, &hit.dg)
     }
 }
-
-

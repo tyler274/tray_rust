@@ -18,17 +18,17 @@
 //! ]
 //! ```
 
-use std::iter;
-use std::path::Path;
 use std::fs::File;
 use std::io::BufReader;
+use std::iter;
+use std::path::Path;
 
 use byteorder::{LittleEndian, ReadBytesExt};
 use light_arena::Allocator;
 
-use bxdf::{self, BSDF, BxDF};
-use material::Material;
+use bxdf::{self, BxDF, BSDF};
 use geometry::Intersection;
+use material::Material;
 
 /// Material that uses measured data to model the surface reflectance properties.
 /// The measured data is from "A Data-Driven Reflectance Model",
@@ -52,17 +52,22 @@ impl Merl {
         let file = match File::open(path) {
             Ok(f) => f,
             Err(e) => {
-                panic!("material::Merl::load_file - failed to open {:?} due to {}", path, e);
-            },
+                panic!(
+                    "material::Merl::load_file - failed to open {:?} due to {}",
+                    path, e
+                );
+            }
         };
         let mut reader = BufReader::new(file);
         // Values we expect to read from a MERL BRDF file for each dimension
         let n_theta_h = 90;
         let n_theta_d = 90;
         let n_phi_d = 180;
-        let dims = [reader.read_i32::<LittleEndian>().unwrap() as usize,
-                    reader.read_i32::<LittleEndian>().unwrap() as usize,
-                    reader.read_i32::<LittleEndian>().unwrap() as usize];
+        let dims = [
+            reader.read_i32::<LittleEndian>().unwrap() as usize,
+            reader.read_i32::<LittleEndian>().unwrap() as usize,
+            reader.read_i32::<LittleEndian>().unwrap() as usize,
+        ];
         if n_theta_h != dims[0] || n_theta_d != dims[1] || n_phi_d != dims[2] {
             panic!("material::Merl::load_file - Invalid MERL file header, aborting");
         }
@@ -80,16 +85,27 @@ impl Merl {
                 brdf[3 * i + c] = f32::max(0.0, x);
             }
         }
-        Merl { brdf: brdf, n_theta_h: n_theta_h, n_theta_d: n_theta_d, n_phi_d: n_phi_d }
+        Merl {
+            brdf: brdf,
+            n_theta_h: n_theta_h,
+            n_theta_d: n_theta_d,
+            n_phi_d: n_phi_d,
+        }
     }
 }
 
 impl Material for Merl {
-    fn bsdf<'a, 'b, 'c>(&'a self, hit: &Intersection<'a, 'b>,
-                        alloc: &'c Allocator) -> BSDF<'c> where 'a: 'c {
-        let bxdfs = alloc.alloc_slice::<&BxDF>(1);
-        bxdfs[0] = alloc.alloc(bxdf::Merl::new(&self.brdf[..], self.n_theta_h, self.n_theta_d, self.n_phi_d));
+    fn bsdf<'a, 'b, 'c>(&'a self, hit: &Intersection<'a, 'b>, alloc: &'c Allocator) -> BSDF<'c>
+    where
+        'a: 'c,
+    {
+        let bxdfs = alloc.alloc_slice::<&dyn BxDF>(1);
+        bxdfs[0] = alloc.alloc(bxdf::Merl::new(
+            &self.brdf[..],
+            self.n_theta_h,
+            self.n_theta_d,
+            self.n_phi_d,
+        ));
         BSDF::new(bxdfs, 1.0, &hit.dg)
     }
 }
-

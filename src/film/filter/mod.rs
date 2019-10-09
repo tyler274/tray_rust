@@ -25,4 +25,3 @@ pub trait Filter {
     /// Return the inverse height of the filter
     fn inv_height(&self) -> f32;
 }
-

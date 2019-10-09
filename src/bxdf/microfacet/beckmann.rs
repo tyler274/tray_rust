@@ -4,8 +4,8 @@
 use std::f32;
 
 use bxdf;
-use linalg::{self, Vector};
 use bxdf::microfacet::MicrofacetDistribution;
+use linalg::{self, Vector};
 
 /// Beckmann microfacet distribution with Smith shadowing-masking. This is the
 /// microfacet model described by [Walter et al.](https://www.cs.cornell.edu/~srm/publications/EGSR07-btdf.pdf)
@@ -63,4 +63,3 @@ impl MicrofacetDistribution for Beckmann {
         }
     }
 }
-

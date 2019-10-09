@@ -1,8 +1,8 @@
 //! Defines the `DifferentialGeometry` type which is used to pass information
 //! about the hit piece of geometry back from the intersection to the shading
 
-use linalg::{self, Point, Normal, Vector};
 use geometry::Geometry;
+use linalg::{self, Normal, Point, Vector};
 
 /// Stores information about a hit piece of geometry of some object in the scene
 #[derive(Clone, Copy)]
@@ -23,15 +23,22 @@ pub struct DifferentialGeometry<'a> {
     /// Derivative of the point with respect to the v parameterization coord of the surface
     pub dp_dv: Vector,
     /// The geometry that was hit
-    pub geom: &'a (Geometry + 'a),
+    pub geom: &'a (dyn Geometry + 'a),
 }
 
 impl<'a> DifferentialGeometry<'a> {
     /// Setup the differential geometry. Note that the normal will be computed
     /// using cross(dp_du, dp_dv)
-    pub fn new(p: &Point, ng: &Normal, u: f32, v: f32, time: f32,
-               dp_du: &Vector, dp_dv: &Vector, geom: &'a (Geometry + 'a)) -> DifferentialGeometry<'a>
-    {
+    pub fn new(
+        p: &Point,
+        ng: &Normal,
+        u: f32,
+        v: f32,
+        time: f32,
+        dp_du: &Vector,
+        dp_dv: &Vector,
+        geom: &'a (dyn Geometry + 'a),
+    ) -> DifferentialGeometry<'a> {
         let n = linalg::cross(dp_du, dp_dv).normalized();
         DifferentialGeometry {
             p: *p,
@@ -42,13 +49,20 @@ impl<'a> DifferentialGeometry<'a> {
             time: time,
             dp_du: *dp_du,
             dp_dv: *dp_dv,
-            geom: geom
+            geom: geom,
         }
     }
     /// Setup the differential geometry using the normal passed for the surface normal
-    pub fn with_normal(p: &Point, n: &Normal, u: f32, v: f32, time: f32,
-               dp_du: &Vector, dp_dv: &Vector, geom: &'a (Geometry + 'a)) -> DifferentialGeometry<'a>
-    {
+    pub fn with_normal(
+        p: &Point,
+        n: &Normal,
+        u: f32,
+        v: f32,
+        time: f32,
+        dp_du: &Vector,
+        dp_dv: &Vector,
+        geom: &'a (dyn Geometry + 'a),
+    ) -> DifferentialGeometry<'a> {
         let nn = n.normalized();
         DifferentialGeometry {
             p: *p,
@@ -59,8 +73,7 @@ impl<'a> DifferentialGeometry<'a> {
             time: time,
             dp_du: *dp_du,
             dp_dv: *dp_dv,
-            geom: geom
+            geom: geom,
         }
     }
 }
-

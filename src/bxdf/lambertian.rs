@@ -1,12 +1,12 @@
 //! Defines a Lambertion BRDF that describes perfectly diffuse surfaces.
 //! See [Lambertian reflectance](https://en.wikipedia.org/wiki/Lambertian_reflectance)
 
-use std::f32;
 use enum_set::EnumSet;
+use std::f32;
 
-use linalg::Vector;
-use film::Colorf;
 use bxdf::{BxDF, BxDFType};
+use film::Colorf;
+use linalg::Vector;
 
 /// Lambertian BRDF that implements the Lambertian reflectance model
 #[derive(Clone, Copy, Debug)]
@@ -33,4 +33,3 @@ impl BxDF for Lambertian {
         self.reflectance * f32::consts::FRAC_1_PI
     }
 }
-

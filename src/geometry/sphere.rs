@@ -12,8 +12,8 @@
 
 use std::f32;
 
-use geometry::{Geometry, DifferentialGeometry, Boundable, BBox, Sampleable};
-use linalg::{self, Normal, Vector, Ray, Point};
+use geometry::{BBox, Boundable, DifferentialGeometry, Geometry, Sampleable};
+use linalg::{self, Normal, Point, Ray, Vector};
 use mc;
 
 /// A sphere with user-specified radius located at the origin.
@@ -73,18 +73,26 @@ impl Geometry for Sphere {
             x => x,
         };
         let v = theta / f32::consts::PI;
-        let dp_du = Vector::new(-f32::consts::PI * 2.0 * p.y, f32::consts::PI * 2.0 * p.x, 0.0);
-        let dp_dv = Vector::new(p.z * cos_phi, p.z * sin_phi,
-                                -self.radius * f32::sin(theta)) * f32::consts::PI;
+        let dp_du = Vector::new(
+            -f32::consts::PI * 2.0 * p.y,
+            f32::consts::PI * 2.0 * p.x,
+            0.0,
+        );
+        let dp_dv = Vector::new(p.z * cos_phi, p.z * sin_phi, -self.radius * f32::sin(theta))
+            * f32::consts::PI;
 
-        Some(DifferentialGeometry::with_normal(&p, &n, u, v, ray.time, &dp_du, &dp_dv, self))
+        Some(DifferentialGeometry::with_normal(
+            &p, &n, u, v, ray.time, &dp_du, &dp_dv, self,
+        ))
     }
 }
 
 impl Boundable for Sphere {
     fn bounds(&self, _: f32, _: f32) -> BBox {
-        BBox::span(Point::new(-self.radius, -self.radius, -self.radius),
-                   Point::new(self.radius, self.radius, self.radius))
+        BBox::span(
+            Point::new(-self.radius, -self.radius, -self.radius),
+            Point::new(self.radius, self.radius, self.radius),
+        )
     }
 }
 
@@ -102,14 +110,18 @@ impl Sampleable for Sphere {
         // The PDF is uniform if we're insidfe the sphere
         if dist_sqr - self.radius * self.radius < 0.0001 {
             self.sample_uniform(samples)
-        }
-        else {
+        } else {
             let w_z = (Point::broadcast(0.0) - *p).normalized();
             let (w_x, w_y) = linalg::coordinate_system(&w_z);
             // Compute theta and phi for samples in the cone of the sphere seen from `p`
-            let cos_theta_max = f32::sqrt(f32::max(0.0, 1.0 - self.radius * self.radius / dist_sqr));
-            let mut ray = Ray::new(p, &mc::uniform_sample_cone_frame(samples, cos_theta_max,
-                                                                     &w_x, &w_y, &w_z).normalized(), 0.0);
+            let cos_theta_max =
+                f32::sqrt(f32::max(0.0, 1.0 - self.radius * self.radius / dist_sqr));
+            let mut ray = Ray::new(
+                p,
+                &mc::uniform_sample_cone_frame(samples, cos_theta_max, &w_x, &w_y, &w_z)
+                    .normalized(),
+                0.0,
+            );
             // Try to hit the sphere with this ray to sample it
             match self.intersect(&mut ray) {
                 Some(dg) => (dg.p, dg.ng),
@@ -134,9 +146,9 @@ impl Sampleable for Sphere {
         if dist_sqr - self.radius * self.radius < 0.0001 {
             1.0 / self.surface_area()
         } else {
-            let cos_theta_max = f32::sqrt(f32::max(0.0, 1.0 - self.radius * self.radius / dist_sqr));
+            let cos_theta_max =
+                f32::sqrt(f32::max(0.0, 1.0 - self.radius * self.radius / dist_sqr));
             mc::uniform_cone_pdf(cos_theta_max)
         }
     }
 }
-

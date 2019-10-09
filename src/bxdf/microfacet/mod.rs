@@ -29,4 +29,3 @@ pub trait MicrofacetDistribution {
     /// `v` is the reflected/incident direction, `w_h` is the microfacet normal
     fn monodir_shadowing(&self, v: &Vector, w_h: &Vector) -> f32;
 }
-

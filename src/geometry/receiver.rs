@@ -1,16 +1,16 @@
 //! A receiver is an instance of geometry that does not emit any light
 
-use std::sync::Arc;
-use geometry::{Boundable, BBox, BoundableGeom, DifferentialGeometry};
+use geometry::{BBox, Boundable, BoundableGeom, DifferentialGeometry};
+use linalg::{AnimatedTransform, Ray};
 use material::Material;
-use linalg::{Ray, AnimatedTransform};
+use std::sync::Arc;
 
 /// An instance of geometry in the scene that only receives light
 pub struct Receiver {
     /// The geometry that's being instanced.
-    geom: Arc<BoundableGeom + Send + Sync>,
+    geom: Arc<dyn BoundableGeom + Send + Sync>,
     /// The material being used by this instance.
-    pub material: Arc<Material + Send + Sync>,
+    pub material: Arc<dyn Material + Send + Sync>,
     /// The transform to world space
     transform: AnimatedTransform,
     /// Tag to identify the instance
@@ -19,14 +19,23 @@ pub struct Receiver {
 
 impl Receiver {
     /// Create a new instance of some geometry in the scene
-    pub fn new(geom: Arc<BoundableGeom + Send + Sync>, material: Arc<Material + Send + Sync>,
-               transform: AnimatedTransform, tag: String) -> Receiver {
-        Receiver { geom: geom, material: material, transform: transform, tag: tag }
+    pub fn new(
+        geom: Arc<dyn BoundableGeom + Send + Sync>,
+        material: Arc<dyn Material + Send + Sync>,
+        transform: AnimatedTransform,
+        tag: String,
+    ) -> Receiver {
+        Receiver {
+            geom: geom,
+            material: material,
+            transform: transform,
+            tag: tag,
+        }
     }
     /// Test the ray for intersection against this insance of geometry.
     /// returns Some(Intersection) if an intersection was found and None if not.
     /// If an intersection is found `ray.max_t` will be set accordingly
-    pub fn intersect(&self, ray: &mut Ray) -> Option<(DifferentialGeometry, &Material)> {
+    pub fn intersect(&self, ray: &mut Ray) -> Option<(DifferentialGeometry, &dyn Material)> {
         let transform = self.transform.transform(ray.time);
         let mut local = transform.inv_mul_ray(ray);
         let mut dg = match self.geom.intersect(&mut local) {
@@ -53,7 +62,7 @@ impl Receiver {
 
 impl Boundable for Receiver {
     fn bounds(&self, start: f32, end: f32) -> BBox {
-        self.transform.animation_bounds(&self.geom.bounds(start, end), start, end)
+        self.transform
+            .animation_bounds(&self.geom.bounds(start, end), start, end)
     }
 }
-

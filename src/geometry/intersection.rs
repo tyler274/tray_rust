@@ -2,7 +2,7 @@
 //! a full intersection, eg. hit info about the geometry and instance
 //! that was intersected
 
-use geometry::{Instance, DifferentialGeometry};
+use geometry::{DifferentialGeometry, Instance};
 use material::Material;
 
 /// Stores information about an intersection that occured with some instance
@@ -15,16 +15,22 @@ pub struct Intersection<'a, 'b> {
     /// The instance of geometry that was hit
     pub instance: &'b Instance,
     /// The material of the instance that was hit
-    pub material: &'b Material,
+    pub material: &'b dyn Material,
 }
 
 impl<'a, 'b> Intersection<'a, 'b> {
     /// Construct the Intersection from a potential hit stored in a
     /// Option<DifferentialGeometry>. Returns None if `dg` is None
     /// or if the instance member of `dg` is None
-    pub fn new(dg: DifferentialGeometry<'a>, inst: &'b Instance, mat: &'b Material)
-        -> Intersection<'a, 'b> {
-        Intersection { dg: dg, instance: inst, material: mat }
+    pub fn new(
+        dg: DifferentialGeometry<'a>,
+        inst: &'b Instance,
+        mat: &'b dyn Material,
+    ) -> Intersection<'a, 'b> {
+        Intersection {
+            dg: dg,
+            instance: inst,
+            material: mat,
+        }
     }
 }
-

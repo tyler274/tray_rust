@@ -4,11 +4,11 @@ use std::ops::{Add, Mul};
 
 use film::Colorf;
 
-pub use self::image::Image;
 pub use self::animated_image::AnimatedImage;
+pub use self::image::Image;
 
-pub mod image;
 pub mod animated_image;
+pub mod image;
 
 /// scalars or Colors can be computed on some image texture
 /// or procedural generator
@@ -20,8 +20,9 @@ pub trait Texture {
 }
 
 fn bilinear_interpolate<T, F>(x: f32, y: f32, get: F) -> T
-    where T: Copy + Add<T, Output=T> + Mul<f32, Output=T>,
-          F: Fn(u32, u32) -> T
+where
+    T: Copy + Add<T, Output = T> + Mul<f32, Output = T>,
+    F: Fn(u32, u32) -> T,
 {
     let p00 = (x as u32, y as u32);
     let p10 = (p00.0 + 1, p00.1);
@@ -35,8 +36,7 @@ fn bilinear_interpolate<T, F>(x: f32, y: f32, get: F) -> T
 
     let sx = x - p00.0 as f32;
     let sy = y - p00.1 as f32;
-    s00 * (1.0 - sx) * (1.0 - sy) + s10 * sx * (1.0 - sy)
-        + s01 * (1.0 - sx) * sy + s11 * sx * sy
+    s00 * (1.0 - sx) * (1.0 - sy) + s10 * sx * (1.0 - sy) + s01 * (1.0 - sx) * sy + s11 * sx * sy
 }
 
 /// A single valued, solid scalar texture
@@ -84,4 +84,3 @@ impl Texture for UVColor {
         Colorf::new(u, v, 0.0)
     }
 }
-

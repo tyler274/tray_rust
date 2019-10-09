@@ -59,11 +59,11 @@
 
 use std::sync::Arc;
 
-use geometry::{Boundable, BBox, SampleableGeom, DifferentialGeometry};
-use material::Material;
-use linalg::{self, AnimatedTransform, Point, Ray, Vector, Normal};
 use film::{AnimatedColor, Colorf};
+use geometry::{BBox, Boundable, DifferentialGeometry, SampleableGeom};
 use light::{Light, OcclusionTester};
+use linalg::{self, AnimatedTransform, Normal, Point, Ray, Vector};
+use material::Material;
 
 /// The type of emitter, either a point light or an area light
 /// in which case the emitter has associated geometry and a material
@@ -72,7 +72,10 @@ enum EmitterType {
     Point,
     /// The area light holds the geometry that is emitting the light
     /// and the material for the geometry
-    Area(Arc<SampleableGeom + Send + Sync>, Arc<Material + Send + Sync>),
+    Area(
+        Arc<dyn SampleableGeom + Send + Sync>,
+        Arc<dyn Material + Send + Sync>,
+    ),
 }
 
 /// An instance of geometry in the scene that receives and emits light.
@@ -91,31 +94,40 @@ impl Emitter {
     /// TODO: We need sample methods for geometry to do this
     /// We also need MIS in the path tracer's direct light sampling so we get
     /// good quality
-    pub fn area(geom: Arc<SampleableGeom + Send + Sync>, material: Arc<Material + Send + Sync>,
-                emission: AnimatedColor, transform: AnimatedTransform, tag: String) -> Emitter {
+    pub fn area(
+        geom: Arc<dyn SampleableGeom + Send + Sync>,
+        material: Arc<dyn Material + Send + Sync>,
+        emission: AnimatedColor,
+        transform: AnimatedTransform,
+        tag: String,
+    ) -> Emitter {
         // TODO: How to change this transform to handle scaling within the animation?
         /*
         if transform.has_scale() {
             println!("Warning: scaling detected in area light transform, this may give incorrect results");
         }
         */
-        Emitter { emitter: EmitterType::Area(geom, material),
-                  emission: emission,
-                  transform: transform,
-                  tag: tag }
+        Emitter {
+            emitter: EmitterType::Area(geom, material),
+            emission: emission,
+            transform: transform,
+            tag: tag,
+        }
     }
     /// Create a point light at the origin that is transformed by `transform` to its location
     /// in the world
     pub fn point(transform: AnimatedTransform, emission: AnimatedColor, tag: String) -> Emitter {
-        Emitter { emitter: EmitterType::Point,
-                  emission: emission,
-                  transform: transform,
-                  tag: tag }
+        Emitter {
+            emitter: EmitterType::Point,
+            emission: emission,
+            transform: transform,
+            tag: tag,
+        }
     }
     /// Test the ray for intersection against this insance of geometry.
     /// returns Some(Intersection) if an intersection was found and None if not.
     /// If an intersection is found `ray.max_t` will be set accordingly
-    pub fn intersect(&self, ray: &mut Ray) -> Option<(DifferentialGeometry, &Material)> {
+    pub fn intersect(&self, ray: &mut Ray) -> Option<(DifferentialGeometry, &dyn Material)> {
         match self.emitter {
             EmitterType::Point => None,
             EmitterType::Area(ref geom, ref mat) => {
@@ -132,13 +144,17 @@ impl Emitter {
                 dg.dp_du = transform * dg.dp_du;
                 dg.dp_dv = transform * dg.dp_dv;
                 Some((dg, &**mat))
-            },
+            }
         }
     }
     /// Return the radiance emitted by the light in the direction `w`
     /// from point `p` on the light's surface with normal `n`
     pub fn radiance(&self, w: &Vector, _: &Point, n: &Normal, time: f32) -> Colorf {
-        if linalg::dot(w, n) > 0.0 { self.emission.color(time) } else { Colorf::black() }
+        if linalg::dot(w, n) > 0.0 {
+            self.emission.color(time)
+        } else {
+            Colorf::black()
+        }
     }
     /// Get the transform to place the emitter into world space
     pub fn get_transform(&self) -> &AnimatedTransform {
@@ -153,24 +169,36 @@ impl Emitter {
 impl Boundable for Emitter {
     fn bounds(&self, start: f32, end: f32) -> BBox {
         match self.emitter {
-            EmitterType::Point => self.transform.animation_bounds(&BBox::singular(Point::broadcast(0.0)), start, end),
+            EmitterType::Point => {
+                self.transform
+                    .animation_bounds(&BBox::singular(Point::broadcast(0.0)), start, end)
+            }
             EmitterType::Area(ref g, _) => {
-                self.transform.animation_bounds(&g.bounds(start, end), start, end)
-            },
+                self.transform
+                    .animation_bounds(&g.bounds(start, end), start, end)
+            }
         }
     }
 }
 
 impl Light for Emitter {
-    fn sample_incident(&self, p: &Point, samples: &(f32, f32), time: f32)
-        -> (Colorf, Vector, f32, OcclusionTester)
-    {
+    fn sample_incident(
+        &self,
+        p: &Point,
+        samples: &(f32, f32),
+        time: f32,
+    ) -> (Colorf, Vector, f32, OcclusionTester) {
         match self.emitter {
             EmitterType::Point => {
                 let transform = self.transform.transform(time);
                 let pos = transform * Point::broadcast(0.0);
                 let w_i = (pos - *p).normalized();
-                (self.emission.color(time) / pos.distance_sqr(p), w_i, 1.0, OcclusionTester::test_points(p, &pos, time))
+                (
+                    self.emission.color(time) / pos.distance_sqr(p),
+                    w_i,
+                    1.0,
+                    OcclusionTester::test_points(p, &pos, time),
+                )
             }
             EmitterType::Area(ref g, _) => {
                 let transform = self.transform.transform(time);
@@ -180,8 +208,13 @@ impl Light for Emitter {
                 let pdf = g.pdf(&p_l, &w_il);
                 let radiance = self.radiance(&-w_il, &p_sampled, &normal, time);
                 let p_w = transform * p_sampled;
-                (radiance, transform * w_il, pdf, OcclusionTester::test_points(p, &p_w, time))
-            },
+                (
+                    radiance,
+                    transform * w_il,
+                    pdf,
+                    OcclusionTester::test_points(p, &p_w, time),
+                )
+            }
         }
     }
     fn delta_light(&self) -> bool {
@@ -193,7 +226,7 @@ impl Light for Emitter {
     fn pdf(&self, p: &Point, w_i: &Vector, time: f32) -> f32 {
         match self.emitter {
             EmitterType::Point => 0.0,
-            EmitterType::Area(ref g, _ ) => {
+            EmitterType::Area(ref g, _) => {
                 let transform = self.transform.transform(time);
                 let p_l = transform.inv_mul_point(p);
                 let w = (transform.inv_mul_vector(w_i)).normalized();
@@ -202,4 +235,3 @@ impl Light for Emitter {
         }
     }
 }
-

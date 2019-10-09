@@ -16,8 +16,8 @@
 
 use std::f32;
 
-use geometry::{Geometry, DifferentialGeometry, Boundable, Sampleable, BBox};
-use linalg::{self, Normal, Vector, Ray, Point};
+use geometry::{BBox, Boundable, DifferentialGeometry, Geometry, Sampleable};
+use linalg::{self, Normal, Point, Ray, Vector};
 
 /// A rectangle centered at the origin spanning [-width / 2, -height / 2]
 /// to [width / 2, height / 2] with a normal along [0, 0, 1]
@@ -30,7 +30,10 @@ pub struct Rectangle {
 impl Rectangle {
     /// Create a new rectangle with the desired width and height
     pub fn new(width: f32, height: f32) -> Rectangle {
-        Rectangle { width: width, height: height }
+        Rectangle {
+            width: width,
+            height: height,
+        }
     }
 }
 
@@ -56,7 +59,9 @@ impl Geometry for Rectangle {
             let v = (p.y + half_height) / (2.0 * half_height);
             let dp_du = Vector::new(half_width * 2.0, 0.0, 0.0);
             let dp_dv = Vector::new(0.0, half_height * 2.0, 0.0);
-            Some(DifferentialGeometry::new(&p, &n, u, v, ray.time, &dp_du, &dp_dv, self))
+            Some(DifferentialGeometry::new(
+                &p, &n, u, v, ray.time, &dp_du, &dp_dv, self,
+            ))
         } else {
             None
         }
@@ -67,7 +72,10 @@ impl Boundable for Rectangle {
     fn bounds(&self, _: f32, _: f32) -> BBox {
         let half_width = self.width / 2.0;
         let half_height = self.height / 2.0;
-        BBox::span(Point::new(-half_width, -half_height, 0.0), Point::new(half_width, half_height, 0.0))
+        BBox::span(
+            Point::new(-half_width, -half_height, 0.0),
+            Point::new(half_width, half_height, 0.0),
+        )
     }
 }
 
@@ -75,8 +83,14 @@ impl Sampleable for Rectangle {
     /// Uniform sampling for a rect is simple: just scale the two samples into the
     /// rectangle's space and return them as the x,y coordinates of the point chosen
     fn sample_uniform(&self, samples: &(f32, f32)) -> (Point, Normal) {
-        (Point::new(samples.0 * self.width - self.width / 2.0, samples.1 * self.height - self.height / 2.0, 0.0),
-         Normal::new(0.0, 0.0, 1.0))
+        (
+            Point::new(
+                samples.0 * self.width - self.width / 2.0,
+                samples.1 * self.height - self.height / 2.0,
+                0.0,
+            ),
+            Normal::new(0.0, 0.0, 1.0),
+        )
     }
     fn sample(&self, _: &Point, samples: &(f32, f32)) -> (Point, Normal) {
         self.sample_uniform(samples)
@@ -97,10 +111,13 @@ impl Sampleable for Rectangle {
                 let w = -*w_i;
                 let pdf = p.distance_sqr(&ray.at(ray.max_t))
                     / (f32::abs(linalg::dot(&d.n, &w)) * self.surface_area());
-                if f32::is_finite(pdf) { pdf } else { 0.0 }
-            },
-            None => 0.0
+                if f32::is_finite(pdf) {
+                    pdf
+                } else {
+                    0.0
+                }
+            }
+            None => 0.0,
         }
     }
 }
-

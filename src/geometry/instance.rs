@@ -62,11 +62,10 @@
 
 use std::sync::Arc;
 
-use geometry::{Intersection, Boundable, BBox, BoundableGeom, Receiver, Emitter,
-               SampleableGeom};
-use material::Material;
-use linalg::{Ray, AnimatedTransform};
 use film::AnimatedColor;
+use geometry::{BBox, Boundable, BoundableGeom, Emitter, Intersection, Receiver, SampleableGeom};
+use linalg::{AnimatedTransform, Ray};
+use material::Material;
 
 /// Defines an instance of some geometry with its own transform and material
 pub enum Instance {
@@ -76,18 +75,31 @@ pub enum Instance {
 
 impl Instance {
     /// Create an instance of the geometry in the scene that will only receive light.
-    pub fn receiver(geom: Arc<BoundableGeom + Send + Sync>, material: Arc<Material + Send + Sync>,
-               transform: AnimatedTransform, tag: String) -> Instance {
+    pub fn receiver(
+        geom: Arc<dyn BoundableGeom + Send + Sync>,
+        material: Arc<dyn Material + Send + Sync>,
+        transform: AnimatedTransform,
+        tag: String,
+    ) -> Instance {
         Instance::Receiver(Receiver::new(geom, material, transform, tag))
     }
     /// Create an instance of the geometry in the scene that will emit and receive light
-    pub fn area_light(geom: Arc<SampleableGeom + Send + Sync>, material: Arc<Material + Send + Sync>,
-               emission: AnimatedColor, transform: AnimatedTransform, tag: String) -> Instance {
+    pub fn area_light(
+        geom: Arc<dyn SampleableGeom + Send + Sync>,
+        material: Arc<dyn Material + Send + Sync>,
+        emission: AnimatedColor,
+        transform: AnimatedTransform,
+        tag: String,
+    ) -> Instance {
         Instance::Emitter(Emitter::area(geom, material, emission, transform, tag))
     }
     /// Create a point light at the origin that is transformed by `transform` to its location
     /// in the world
-    pub fn point_light(transform: AnimatedTransform, emission: AnimatedColor, tag: String) ->  Instance {
+    pub fn point_light(
+        transform: AnimatedTransform,
+        emission: AnimatedColor,
+        tag: String,
+    ) -> Instance {
         Instance::Emitter(Emitter::point(transform, emission, tag))
     }
     /// Test the ray for intersection against this insance of geometry.
@@ -114,14 +126,14 @@ impl Instance {
     pub fn get_transform(&self) -> &AnimatedTransform {
         match *self {
             Instance::Emitter(ref e) => e.get_transform(),
-            Instance::Receiver(ref r) => r.get_transform()
+            Instance::Receiver(ref r) => r.get_transform(),
         }
     }
     /// Set the transform for this instance
     pub fn set_transform(&mut self, transform: AnimatedTransform) {
         match *self {
             Instance::Emitter(ref mut e) => e.set_transform(transform),
-            Instance::Receiver(ref mut r) => r.set_transform(transform)
+            Instance::Receiver(ref mut r) => r.set_transform(transform),
         }
     }
 }
@@ -134,4 +146,3 @@ impl Boundable for Instance {
         }
     }
 }
-

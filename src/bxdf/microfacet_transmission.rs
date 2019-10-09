@@ -2,14 +2,14 @@
 //! [Walter et al. 07](https://www.cs.cornell.edu/~srm/publications/EGSR07-btdf.pdf)
 //! for details.
 
-use std::f32;
 use enum_set::EnumSet;
+use std::f32;
 
-use linalg::{self, Vector};
-use film::Colorf;
-use bxdf::{self, BxDF, BxDFType};
 use bxdf::fresnel::{Dielectric, Fresnel};
-use bxdf::microfacet::{MicrofacetDistribution};
+use bxdf::microfacet::MicrofacetDistribution;
+use bxdf::{self, BxDF, BxDFType};
+use film::Colorf;
+use linalg::{self, Vector};
 
 /// Struct providing the microfacet BTDF, implemented as described in
 /// [Walter et al. 07](https://www.cs.cornell.edu/~srm/publications/EGSR07-btdf.pdf)
@@ -19,14 +19,21 @@ pub struct MicrofacetTransmission<'a> {
     fresnel: &'a Dielectric,
     /// Microfacet distribution describing the structure of the microfacets of
     /// the material
-    microfacet: &'a MicrofacetDistribution,
+    microfacet: &'a dyn MicrofacetDistribution,
 }
 
 impl<'a> MicrofacetTransmission<'a> {
     /// Create a new transmissive microfacet BRDF
-    pub fn new(c: &Colorf, fresnel: &'a Dielectric, microfacet: &'a MicrofacetDistribution)
-            -> MicrofacetTransmission<'a> {
-        MicrofacetTransmission { reflectance: *c, fresnel: fresnel, microfacet: microfacet }
+    pub fn new(
+        c: &Colorf,
+        fresnel: &'a Dielectric,
+        microfacet: &'a dyn MicrofacetDistribution,
+    ) -> MicrofacetTransmission<'a> {
+        MicrofacetTransmission {
+            reflectance: *c,
+            fresnel: fresnel,
+            microfacet: microfacet,
+        }
     }
     /// Convenience method for getting `eta_i` and `eta_t` in the right order for if
     /// we're entering or exiting this material based on the direction of the outgoing
@@ -78,8 +85,10 @@ impl<'a> BxDF for MicrofacetTransmission<'a> {
         let g = self.microfacet.shadowing_masking(w_i, w_o, &w_h);
         let wi_dot_h = linalg::dot(w_i, &w_h);
         let jacobian = MicrofacetTransmission::jacobian(w_o, w_i, &w_h, eta);
-        self.reflectance * (f32::abs(wi_dot_h) / (f32::abs(w_i.z) * f32::abs(w_o.z)))
-            * (f * g * d) * jacobian
+        self.reflectance
+            * (f32::abs(wi_dot_h) / (f32::abs(w_i.z) * f32::abs(w_o.z)))
+            * (f * g * d)
+            * jacobian
     }
     fn sample(&self, w_o: &Vector, samples: &(f32, f32)) -> (Colorf, Vector, f32) {
         let mut w_h = self.microfacet.sample(w_o, samples);
@@ -107,5 +116,3 @@ impl<'a> BxDF for MicrofacetTransmission<'a> {
         }
     }
 }
-
-

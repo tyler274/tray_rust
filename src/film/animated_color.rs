@@ -1,9 +1,9 @@
 //! Provides an animated color value, so you can have colors change over time
 
-use std::cmp::{Eq, Ord, PartialOrd, PartialEq, Ordering};
+use std::cmp::{Eq, Ord, Ordering, PartialEq, PartialOrd};
 
-use linalg;
 use film::Colorf;
+use linalg;
 
 /// `ColorKeyframe` is a color associated with a specific time
 #[derive(Debug, Copy, Clone)]
@@ -14,7 +14,10 @@ pub struct ColorKeyframe {
 
 impl ColorKeyframe {
     pub fn new(color: &Colorf, time: f32) -> ColorKeyframe {
-        ColorKeyframe { color: *color, time: time }
+        ColorKeyframe {
+            color: *color,
+            time: time,
+        }
     }
 }
 impl Ord for ColorKeyframe {
@@ -46,7 +49,9 @@ impl AnimatedColor {
     /// Create an animated transform that will blend between the passed keyframes
     pub fn with_keyframes(mut keyframes: Vec<ColorKeyframe>) -> AnimatedColor {
         keyframes.sort();
-        AnimatedColor { keyframes: keyframes }
+        AnimatedColor {
+            keyframes: keyframes,
+        }
     }
     /// Compute the color at the desired time
     pub fn color(&self, time: f32) -> Colorf {
@@ -76,4 +81,3 @@ impl AnimatedColor {
         }
     }
 }
-

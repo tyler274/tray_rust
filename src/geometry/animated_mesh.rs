@@ -31,9 +31,9 @@ extern crate tobj;
 
 use std::sync::Arc;
 
-use geometry::{Geometry, DifferentialGeometry, Boundable, BBox, BVH, Mesh};
 use geometry::mesh::intersect_triangle;
-use linalg::{self, Normal, Vector, Ray, Point, lerp};
+use geometry::{BBox, Boundable, DifferentialGeometry, Geometry, Mesh, BVH};
+use linalg::{self, lerp, Normal, Point, Ray, Vector};
 
 pub struct AnimatedMeshData {
     positions: Vec<Arc<Vec<Point>>>,
@@ -42,18 +42,25 @@ pub struct AnimatedMeshData {
     times: Vec<f32>,
 }
 impl AnimatedMeshData {
-    pub fn new(positions: Vec<Arc<Vec<Point>>>, normals: Vec<Arc<Vec<Normal>>>,
-               texcoords: Vec<Arc<Vec<Point>>>, times: Vec<f32>) -> AnimatedMeshData {
+    pub fn new(
+        positions: Vec<Arc<Vec<Point>>>,
+        normals: Vec<Arc<Vec<Normal>>>,
+        texcoords: Vec<Arc<Vec<Point>>>,
+        times: Vec<f32>,
+    ) -> AnimatedMeshData {
         AnimatedMeshData {
             positions: positions,
             normals: normals,
             texcoords: texcoords,
-            times: times
+            times: times,
         }
     }
     /// Get the active indices in the buffers for some time
     fn active_keyframes(&self, time: f32) -> (usize, Option<usize>) {
-        match self.times.binary_search_by(|t| t.partial_cmp(&time).unwrap()) {
+        match self
+            .times
+            .binary_search_by(|t| t.partial_cmp(&time).unwrap())
+        {
             Ok(i) => (i, None),
             Err(i) => {
                 if i == self.times.len() {
@@ -63,7 +70,7 @@ impl AnimatedMeshData {
                 } else {
                     (i - 1, Some(i))
                 }
-            },
+            }
         }
     }
     /// Get the position at some time
@@ -114,13 +121,24 @@ impl AnimatedMesh {
     /// Create a new AnimatedMesh from the meshes passed. It's assumed the meshes
     /// are sorted in ascending time
     pub fn new(meshes: Vec<Arc<Mesh>>, times: Vec<f32>) -> AnimatedMesh {
-        let pos = meshes.iter().map(|m| m.bvh.iter().next().unwrap().positions.clone()).collect();
-        let normals = meshes.iter().map(|m| m.bvh.iter().next().unwrap().normals.clone()).collect();
-        let tex = meshes.iter().map(|m| m.bvh.iter().next().unwrap().texcoords.clone()).collect();
+        let pos = meshes
+            .iter()
+            .map(|m| m.bvh.iter().next().unwrap().positions.clone())
+            .collect();
+        let normals = meshes
+            .iter()
+            .map(|m| m.bvh.iter().next().unwrap().normals.clone())
+            .collect();
+        let tex = meshes
+            .iter()
+            .map(|m| m.bvh.iter().next().unwrap().texcoords.clone())
+            .collect();
         let data = Arc::new(AnimatedMeshData::new(pos, normals, tex, times));
-        let tris = meshes[0].bvh.iter().map(|t| {
-            AnimatedTriangle::new(t.a, t.b, t.c, data.clone())
-        }).collect();
+        let tris = meshes[0]
+            .bvh
+            .iter()
+            .map(|t| AnimatedTriangle::new(t.a, t.b, t.c, data.clone()))
+            .collect();
         AnimatedMesh {
             bvh: BVH::new(16, tris, data.times[0], data.times[1]),
         }
@@ -154,7 +172,12 @@ pub struct AnimatedTriangle {
 impl AnimatedTriangle {
     /// Create a new triangle representing a triangle within the mesh passed
     pub fn new(a: usize, b: usize, c: usize, data: Arc<AnimatedMeshData>) -> AnimatedTriangle {
-        AnimatedTriangle { a: a, b: b, c: c, data: data }
+        AnimatedTriangle {
+            a: a,
+            b: b,
+            c: c,
+            data: data,
+        }
     }
 }
 
@@ -183,4 +206,3 @@ impl Boundable for AnimatedTriangle {
             .point_union(&self.data.position(self.c, end))
     }
 }
-

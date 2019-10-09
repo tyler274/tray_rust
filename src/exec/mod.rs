@@ -8,8 +8,8 @@ use scene::Scene;
 
 pub use self::multithreaded::MultiThreaded;
 
-pub mod multithreaded;
 pub mod distrib;
+pub mod multithreaded;
 
 /// Config passed to set up the execution environment with information
 /// on what it should be rendering and where to put the results
@@ -24,15 +24,27 @@ pub struct Config {
     pub current_frame: usize,
     /// Which blocks the executor should render, stored
     /// as (start, count) of the block indices
-    pub select_blocks: (usize, usize)
+    pub select_blocks: (usize, usize),
 }
 
 impl Config {
-    pub fn new(out_path: PathBuf, scene_file: String, spp: usize, num_threads: u32,
-               frame_info: FrameInfo, select_blocks: (usize, usize)) -> Config {
-        Config { out_path: out_path, scene_file: scene_file, spp: spp,
-                 num_threads: num_threads, frame_info: frame_info,
-                 current_frame: frame_info.start, select_blocks: select_blocks }
+    pub fn new(
+        out_path: PathBuf,
+        scene_file: String,
+        spp: usize,
+        num_threads: u32,
+        frame_info: FrameInfo,
+        select_blocks: (usize, usize),
+    ) -> Config {
+        Config {
+            out_path: out_path,
+            scene_file: scene_file,
+            spp: spp,
+            num_threads: num_threads,
+            frame_info: frame_info,
+            current_frame: frame_info.start,
+            select_blocks: select_blocks,
+        }
     }
 }
 
@@ -47,4 +59,3 @@ pub trait Exec {
     /// frame's render target and can save it out?
     fn render(&mut self, scene: &mut Scene, rt: &mut RenderTarget, config: &Config);
 }
-

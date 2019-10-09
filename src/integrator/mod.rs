@@ -14,41 +14,55 @@
 //! }
 //! ```
 
-use std::f32;
-use std::cmp;
 use enum_set::EnumSet;
-use rand::StdRng;
 use light_arena::Allocator;
+use rand::rngs::ThreadRng;
+use std::cmp;
+use std::f32;
 
-use scene::Scene;
-use linalg::{self, Ray, Vector, Point};
-use geometry::{Intersection, Emitter, Instance};
+use bxdf::{BxDFType, BSDF};
 use film::Colorf;
-use bxdf::{BSDF, BxDFType};
+use geometry::{Emitter, Instance, Intersection};
 use light::Light;
-use sampler::{Sampler, Sample};
+use linalg::{self, Point, Ray, Vector};
 use mc;
+use sampler::{Sample, Sampler};
+use scene::Scene;
 
-pub use self::whitted::Whitted;
-pub use self::path::Path;
 pub use self::normals_debug::NormalsDebug;
+pub use self::path::Path;
+pub use self::whitted::Whitted;
 
-pub mod whitted;
-pub mod path;
 pub mod normals_debug;
+pub mod path;
+pub mod whitted;
 
 /// Trait implemented by the various integration methods that can be used to render
 /// the scene. For scene usage information see whitted and path to get information
 /// on how to specify them.
 pub trait Integrator {
     /// Compute the illumination at the intersection in the scene
-    fn illumination(&self, scene: &Scene, light_list: &[&Emitter], ray: &Ray,
-                    hit: &Intersection, sampler: &mut Sampler, rng: &mut StdRng,
-                    alloc: &Allocator) -> Colorf;
+    fn illumination(
+        &self,
+        scene: &Scene,
+        light_list: &[&Emitter],
+        ray: &Ray,
+        hit: &Intersection,
+        sampler: &mut dyn Sampler,
+        rng: &mut ThreadRng,
+        alloc: &Allocator,
+    ) -> Colorf;
     /// Compute the color of specularly reflecting light off the intersection
-    fn specular_reflection(&self, scene: &Scene, light_list: &[&Emitter], ray: &Ray,
-                           bsdf: &BSDF, sampler: &mut Sampler, rng: &mut StdRng,
-                           alloc: &Allocator) -> Colorf {
+    fn specular_reflection(
+        &self,
+        scene: &Scene,
+        light_list: &[&Emitter],
+        ray: &Ray,
+        bsdf: &BSDF,
+        sampler: &mut dyn Sampler,
+        rng: &mut ThreadRng,
+        alloc: &Allocator,
+    ) -> Colorf {
         let w_o = -ray.d;
         let mut spec_refl = EnumSet::new();
         spec_refl.insert(BxDFType::Specular);
@@ -71,9 +85,16 @@ pub trait Integrator {
         refl
     }
     /// Compute the color of specularly transmitted light through the intersection
-    fn specular_transmission(&self, scene: &Scene, light_list: &[&Emitter], ray: &Ray,
-                             bsdf: &BSDF, sampler: &mut Sampler, rng: &mut StdRng,
-                             alloc: &Allocator) -> Colorf {
+    fn specular_transmission(
+        &self,
+        scene: &Scene,
+        light_list: &[&Emitter],
+        ray: &Ray,
+        bsdf: &BSDF,
+        sampler: &mut dyn Sampler,
+        rng: &mut ThreadRng,
+        alloc: &Allocator,
+    ) -> Colorf {
         let w_o = -ray.d;
         let mut spec_trans = EnumSet::new();
         spec_trans.insert(BxDFType::Specular);
@@ -89,7 +110,8 @@ pub trait Integrator {
             let mut trans_ray = ray.child(&bsdf.p, &w_i);
             trans_ray.min_t = 0.001;
             if let Some(hit) = scene.intersect(&mut trans_ray) {
-                let li = self.illumination(scene, light_list, &trans_ray, &hit, sampler, rng, alloc);
+                let li =
+                    self.illumination(scene, light_list, &trans_ray, &hit, sampler, rng, alloc);
                 transmit = f * li * f32::abs(linalg::dot(&w_i, &bsdf.n)) / pdf;
             }
         }
@@ -103,11 +125,32 @@ pub trait Integrator {
     /// - `bsdf` surface properties of the surface being illuminated
     /// - `light_sample` 3 random samples for the light
     /// - `bsdf_sample` 3 random samples for the bsdf
-    fn sample_one_light(&self, scene: &Scene, light_list: &[&Emitter], w_o: &Vector, p: &Point,
-                        bsdf: &BSDF, light_sample: &Sample, bsdf_sample: &Sample, time: f32) -> Colorf {
-        let l = cmp::min((light_sample.one_d * light_list.len() as f32) as usize, light_list.len() - 1);
-        self.estimate_direct(scene, w_o, p, bsdf, light_sample, bsdf_sample, light_list[l],
-                             BxDFType::non_specular(), time)
+    fn sample_one_light(
+        &self,
+        scene: &Scene,
+        light_list: &[&Emitter],
+        w_o: &Vector,
+        p: &Point,
+        bsdf: &BSDF,
+        light_sample: &Sample,
+        bsdf_sample: &Sample,
+        time: f32,
+    ) -> Colorf {
+        let l = cmp::min(
+            (light_sample.one_d * light_list.len() as f32) as usize,
+            light_list.len() - 1,
+        );
+        self.estimate_direct(
+            scene,
+            w_o,
+            p,
+            bsdf,
+            light_sample,
+            bsdf_sample,
+            light_list[l],
+            BxDFType::non_specular(),
+            time,
+        )
     }
     /// Estimate the direct light contribution to the surface being shaded by the light
     /// using multiple importance sampling
@@ -119,11 +162,22 @@ pub trait Integrator {
     /// - `bsdf_sample` 3 random samples for the bsdf
     /// - `light` light to sample contribution from
     /// - `flags` flags for which BxDF types to sample
-    fn estimate_direct(&self, scene: &Scene, w_o: &Vector, p: &Point, bsdf: &BSDF, light_sample: &Sample,
-                       bsdf_sample: &Sample, light: &Light, flags: EnumSet<BxDFType>, time: f32) -> Colorf {
+    fn estimate_direct(
+        &self,
+        scene: &Scene,
+        w_o: &Vector,
+        p: &Point,
+        bsdf: &BSDF,
+        light_sample: &Sample,
+        bsdf_sample: &Sample,
+        light: &dyn Light,
+        flags: EnumSet<BxDFType>,
+        time: f32,
+    ) -> Colorf {
         let mut direct_light = Colorf::black();
         // Sample the light first
-        let (li, w_i, pdf_light, occlusion) = light.sample_incident(&bsdf.p, &light_sample.two_d, time);
+        let (li, w_i, pdf_light, occlusion) =
+            light.sample_incident(&bsdf.p, &light_sample.two_d, time);
         if pdf_light > 0.0 && !li.is_black() && !occlusion.occluded(scene) {
             let f = bsdf.eval(w_o, &w_i, flags);
             if !f.is_black() {
@@ -155,17 +209,17 @@ pub trait Integrator {
                 let mut li = Colorf::black();
                 if let Some(h) = scene.intersect(&mut ray) {
                     if let Instance::Emitter(ref e) = *h.instance {
-                        if e as *const Light == light as *const Light {
+                        if e as *const dyn Light == light as *const dyn Light {
                             li = e.radiance(&-w_i, &h.dg.p, &h.dg.ng, time)
                         }
                     }
                 }
                 if !li.is_black() {
-                    direct_light = direct_light + f * li * f32::abs(linalg::dot(&w_i, &bsdf.n)) * w / pdf_bsdf;
+                    direct_light =
+                        direct_light + f * li * f32::abs(linalg::dot(&w_i, &bsdf.n)) * w / pdf_bsdf;
                 }
             }
         }
         direct_light
     }
 }
-

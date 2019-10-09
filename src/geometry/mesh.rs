@@ -18,12 +18,12 @@
 
 extern crate tobj;
 
-use std::sync::Arc;
-use std::path::Path;
 use std::collections::HashMap;
+use std::path::Path;
+use std::sync::Arc;
 
-use geometry::{Geometry, DifferentialGeometry, Boundable, BBox, BVH};
-use linalg::{self, Normal, Vector, Ray, Point};
+use geometry::{BBox, Boundable, DifferentialGeometry, Geometry, BVH};
+use linalg::{self, Normal, Point, Ray, Vector};
 
 /// A mesh composed of triangles, specified by directly passing the position,
 /// normal and index buffers for the triangles making up the mesh
@@ -35,13 +35,28 @@ impl Mesh {
     /// Create a new Mesh from the triangles described in the buffers passed
     /// This data could come from an OBJ file via [tobj](https://github.com/Twinklebear/tobj)
     /// for example.
-    pub fn new(positions: Arc<Vec<Point>>, normals: Arc<Vec<Normal>>, texcoords: Arc<Vec<Point>>,
-               indices: Vec<u32>) -> Mesh {
-        let triangles = indices.chunks(3).map(|i| {
-            Triangle::new(i[0] as usize, i[1] as usize, i[2] as usize, positions.clone(),
-                          normals.clone(), texcoords.clone())
-            }).collect();
-        Mesh { bvh: BVH::unanimated(16, triangles) }
+    pub fn new(
+        positions: Arc<Vec<Point>>,
+        normals: Arc<Vec<Normal>>,
+        texcoords: Arc<Vec<Point>>,
+        indices: Vec<u32>,
+    ) -> Mesh {
+        let triangles = indices
+            .chunks(3)
+            .map(|i| {
+                Triangle::new(
+                    i[0] as usize,
+                    i[1] as usize,
+                    i[2] as usize,
+                    positions.clone(),
+                    normals.clone(),
+                    texcoords.clone(),
+                )
+            })
+            .collect();
+        Mesh {
+            bvh: BVH::unanimated(16, triangles),
+        }
     }
     /// Load all the meshes defined in an OBJ file and return them in a hashmap that maps the
     /// model's name in the file to its loaded mesh. TODO: Don't build the BVH until we actually
@@ -55,25 +70,42 @@ impl Mesh {
                     println!("Loading model {}", m.name);
                     let mesh = m.mesh;
                     if mesh.normals.is_empty() || mesh.texcoords.is_empty() {
-                        print!("Mesh::load_obj error! Normals and texture coordinates are required!");
+                        print!(
+                            "Mesh::load_obj error! Normals and texture coordinates are required!"
+                        );
                         println!("Skipping {}", m.name);
                         continue;
                     }
                     println!("{} has {} triangles", m.name, mesh.indices.len() / 3);
-                    let positions = Arc::new(mesh.positions.chunks(3).map(|i| Point::new(i[0], i[1], i[2]))
-                                             .collect());
-                    let normals = Arc::new(mesh.normals.chunks(3).map(|i| Normal::new(i[0], i[1], i[2]))
-                                           .collect());
-                    let texcoords = Arc::new(mesh.texcoords.chunks(2).map(|i| Point::new(i[0], i[1], 0.0))
-                                             .collect());
-                    meshes.insert(m.name, Arc::new(Mesh::new(positions, normals, texcoords, mesh.indices)));
+                    let positions = Arc::new(
+                        mesh.positions
+                            .chunks(3)
+                            .map(|i| Point::new(i[0], i[1], i[2]))
+                            .collect(),
+                    );
+                    let normals = Arc::new(
+                        mesh.normals
+                            .chunks(3)
+                            .map(|i| Normal::new(i[0], i[1], i[2]))
+                            .collect(),
+                    );
+                    let texcoords = Arc::new(
+                        mesh.texcoords
+                            .chunks(2)
+                            .map(|i| Point::new(i[0], i[1], 0.0))
+                            .collect(),
+                    );
+                    meshes.insert(
+                        m.name,
+                        Arc::new(Mesh::new(positions, normals, texcoords, mesh.indices)),
+                    );
                 }
                 meshes
-            },
+            }
             Err(e) => {
                 println!("Failed to load {:?} due to {:?}", file_name, e);
                 HashMap::new()
-            },
+            }
         }
     }
 }
@@ -103,10 +135,22 @@ pub struct Triangle {
 
 impl Triangle {
     /// Create a new triangle representing a triangle within the mesh passed
-    pub fn new(a: usize, b: usize, c: usize, positions: Arc<Vec<Point>>,
-               normals: Arc<Vec<Normal>>, texcoords: Arc<Vec<Point>>) -> Triangle {
-        Triangle { a: a, b: b, c: c, positions: positions, normals: normals,
-                   texcoords: texcoords }
+    pub fn new(
+        a: usize,
+        b: usize,
+        c: usize,
+        positions: Arc<Vec<Point>>,
+        normals: Arc<Vec<Normal>>,
+        texcoords: Arc<Vec<Point>>,
+    ) -> Triangle {
+        Triangle {
+            a: a,
+            b: b,
+            c: c,
+            positions: positions,
+            normals: normals,
+            texcoords: texcoords,
+        }
     }
 }
 
@@ -133,16 +177,25 @@ impl Boundable for Triangle {
     }
 }
 
-pub fn intersect_triangle<'a, G: Geometry>(geom: &'a G, ray: &mut Ray,
-                                           pa: &Point, pb: &Point, pc: &Point,
-                                           na: &Normal, nb: &Normal, nc: &Normal,
-                                           ta: &Point, tb: &Point, tc: &Point) -> Option<DifferentialGeometry<'a>> {
+pub fn intersect_triangle<'a, G: Geometry>(
+    geom: &'a G,
+    ray: &mut Ray,
+    pa: &Point,
+    pb: &Point,
+    pc: &Point,
+    na: &Normal,
+    nb: &Normal,
+    nc: &Normal,
+    ta: &Point,
+    tb: &Point,
+    tc: &Point,
+) -> Option<DifferentialGeometry<'a>> {
     let e = [*pb - *pa, *pc - *pa];
     let mut s = [Vector::broadcast(0.0); 2];
     s[0] = linalg::cross(&ray.d, &e[1]);
     let div = match linalg::dot(&s[0], &e[0]) {
         // 0.0 => degenerate triangle, can't hit
-        d if d == 0.0  => return None,
+        d if d == 0.0 => return None,
         d => 1.0 / d,
     };
 
@@ -183,17 +236,16 @@ pub fn intersect_triangle<'a, G: Geometry>(geom: &'a G, ray: &mut Ray,
     let dv = [ta.y - tc.y, tb.y - tc.y];
     let det = du[0] * dv[1] - dv[0] * du[1];
     //If the texcoords are degenerate pick arbitrary coordinate system
-    let (dp_du, dp_dv) =
-        if det == 0.0 {
-            linalg::coordinate_system(&linalg::cross(&e[1], &e[0]).normalized())
-        }
-        else {
-            let det = 1.0 / det;
-            let dp = [*pa - *pc, *pb - *pc];
-            let dp_du = (dv[1] * dp[0] - dv[0] * dp[1]) * det;
-            let dp_dv = (-du[1] * dp[0] + du[0] * dp[1]) * det;
-            (dp_du, dp_dv)
-        };
-    Some(DifferentialGeometry::with_normal(&p, &n, texcoord.x, texcoord.y, ray.time, &dp_du, &dp_dv, geom))
+    let (dp_du, dp_dv) = if det == 0.0 {
+        linalg::coordinate_system(&linalg::cross(&e[1], &e[0]).normalized())
+    } else {
+        let det = 1.0 / det;
+        let dp = [*pa - *pc, *pb - *pc];
+        let dp_du = (dv[1] * dp[0] - dv[0] * dp[1]) * det;
+        let dp_dv = (-du[1] * dp[0] + du[0] * dp[1]) * det;
+        (dp_du, dp_dv)
+    };
+    Some(DifferentialGeometry::with_normal(
+        &p, &n, texcoord.x, texcoord.y, ray.time, &dp_du, &dp_dv, geom,
+    ))
 }
-

@@ -12,18 +12,18 @@
 //! }
 //! ```
 
-use std::f32;
-use rand::StdRng;
 use light_arena::Allocator;
+use rand::rngs::ThreadRng;
+use std::f32;
 
-use scene::Scene;
-use linalg::{self, Ray};
-use geometry::{Intersection, Emitter, Instance};
-use film::Colorf;
-use integrator::Integrator;
 use bxdf::BxDFType;
+use film::Colorf;
+use geometry::{Emitter, Instance, Intersection};
+use integrator::Integrator;
 use light::Light;
+use linalg::{self, Ray};
 use sampler::Sampler;
+use scene::Scene;
 
 /// The Whitted integrator implementing the Whitted recursive ray tracing algorithm
 #[derive(Clone, Copy, Debug)]
@@ -34,13 +34,24 @@ pub struct Whitted {
 
 impl Whitted {
     /// Create a new Whitted integrator with the desired maximum recursion depth for rays
-    pub fn new(max_depth: u32) -> Whitted { Whitted { max_depth: max_depth } }
+    pub fn new(max_depth: u32) -> Whitted {
+        Whitted {
+            max_depth: max_depth,
+        }
+    }
 }
 
 impl Integrator for Whitted {
-    fn illumination(&self, scene: &Scene, light_list: &[&Emitter], ray: &Ray,
-                    hit: &Intersection, sampler: &mut Sampler, rng: &mut StdRng,
-                    alloc: &Allocator) -> Colorf {
+    fn illumination(
+        &self,
+        scene: &Scene,
+        light_list: &[&Emitter],
+        ray: &Ray,
+        hit: &Intersection,
+        sampler: &mut dyn Sampler,
+        rng: &mut ThreadRng,
+        alloc: &Allocator,
+    ) -> Colorf {
         let bsdf = hit.material.bsdf(hit, alloc);
         let w_o = -ray.d;
         let mut sample_2d = [(0.0, 0.0)];
@@ -54,17 +65,19 @@ impl Integrator for Whitted {
         }
 
         for light in light_list {
-            let (li, w_i, pdf, occlusion) = light.sample_incident(&hit.dg.p, &sample_2d[0], ray.time);
+            let (li, w_i, pdf, occlusion) =
+                light.sample_incident(&hit.dg.p, &sample_2d[0], ray.time);
             let f = bsdf.eval(&w_o, &w_i, BxDFType::all());
             if !li.is_black() && !f.is_black() && !occlusion.occluded(scene) {
                 illum = illum + f * li * f32::abs(linalg::dot(&w_i, &bsdf.n)) / pdf;
             }
         }
         if ray.depth < self.max_depth {
-            illum = illum + self.specular_reflection(scene, light_list, ray, &bsdf, sampler, rng, alloc);
-            illum = illum + self.specular_transmission(scene, light_list, ray, &bsdf, sampler, rng, alloc);
+            illum = illum
+                + self.specular_reflection(scene, light_list, ray, &bsdf, sampler, rng, alloc);
+            illum = illum
+                + self.specular_transmission(scene, light_list, ray, &bsdf, sampler, rng, alloc);
         }
         illum
     }
 }
-

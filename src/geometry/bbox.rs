@@ -5,7 +5,7 @@
 use std::f32;
 use std::ops::{Index, IndexMut};
 
-use linalg::{self, Point, Vector, Ray, Axis};
+use linalg::{self, Axis, Point, Ray, Vector};
 
 /// A box between the min and max points
 #[derive(Clone, Copy, Debug)]
@@ -17,7 +17,10 @@ pub struct BBox {
 impl BBox {
     /// Create a new degenerate box
     pub fn new() -> BBox {
-        BBox { min: Point::broadcast(f32::INFINITY), max: Point::broadcast(f32::NEG_INFINITY) }
+        BBox {
+            min: Point::broadcast(f32::INFINITY),
+            max: Point::broadcast(f32::NEG_INFINITY),
+        }
     }
     /// Create a new box containing only the point passed
     pub fn singular(p: Point) -> BBox {
@@ -29,18 +32,32 @@ impl BBox {
     }
     /// Get a box representing the union of this box with the one passed
     pub fn box_union(&self, b: &BBox) -> BBox {
-        BBox { min: Point::new(f32::min(self.min.x, b.min.x), f32::min(self.min.y, b.min.y),
-                               f32::min(self.min.z, b.min.z)),
-               max: Point::new(f32::max(self.max.x, b.max.x), f32::max(self.max.y, b.max.y),
-                               f32::max(self.max.z, b.max.z))
+        BBox {
+            min: Point::new(
+                f32::min(self.min.x, b.min.x),
+                f32::min(self.min.y, b.min.y),
+                f32::min(self.min.z, b.min.z),
+            ),
+            max: Point::new(
+                f32::max(self.max.x, b.max.x),
+                f32::max(self.max.y, b.max.y),
+                f32::max(self.max.z, b.max.z),
+            ),
         }
     }
     /// Get a box that contains the passed point, by expanding this box to reach the point
     pub fn point_union(&self, p: &Point) -> BBox {
-        BBox { min: Point::new(f32::min(self.min.x, p.x), f32::min(self.min.y, p.y),
-                               f32::min(self.min.z, p.z)),
-               max: Point::new(f32::max(self.max.x, p.x), f32::max(self.max.y, p.y),
-                               f32::max(self.max.z, p.z))
+        BBox {
+            min: Point::new(
+                f32::min(self.min.x, p.x),
+                f32::min(self.min.y, p.y),
+                f32::min(self.min.z, p.z),
+            ),
+            max: Point::new(
+                f32::max(self.max.x, p.x),
+                f32::max(self.max.y, p.y),
+                f32::max(self.max.z, p.z),
+            ),
         }
     }
     /// Compute the axis along which the box is longest
@@ -56,8 +73,11 @@ impl BBox {
     }
     /// Compute the point in the box at some t value along each axis
     pub fn lerp(&self, tx: f32, ty: f32, tz: f32) -> Point {
-        Point::new(linalg::lerp(tx, &self.min.x, &self.max.x), linalg::lerp(ty, &self.min.y, &self.max.y),
-                   linalg::lerp(tz, &self.min.z, &self.max.z))
+        Point::new(
+            linalg::lerp(tx, &self.min.x, &self.max.x),
+            linalg::lerp(ty, &self.min.y, &self.max.y),
+            linalg::lerp(tz, &self.min.z, &self.max.z),
+        )
     }
     /// Find the position of the point relative to the box, with `min` being the origin
     pub fn offset(&self, p: &Point) -> Vector {
@@ -132,4 +152,3 @@ impl IndexMut<usize> for BBox {
         }
     }
 }
-

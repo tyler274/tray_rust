@@ -22,17 +22,17 @@ use std::sync::Arc;
 
 use light_arena::Allocator;
 
-use geometry::Intersection;
-use bxdf::{BxDF, BSDF, SpecularReflection, SpecularTransmission};
 use bxdf::fresnel::Dielectric;
+use bxdf::{BxDF, SpecularReflection, SpecularTransmission, BSDF};
+use geometry::Intersection;
 use material::Material;
 use texture::Texture;
 
 /// The Glass material describes specularly transmissive and reflective glass material
 pub struct Glass {
-    reflect: Arc<Texture + Send + Sync>,
-    transmit: Arc<Texture + Send + Sync>,
-    eta: Arc<Texture + Send + Sync>,
+    reflect: Arc<dyn Texture + Send + Sync>,
+    transmit: Arc<dyn Texture + Send + Sync>,
+    eta: Arc<dyn Texture + Send + Sync>,
 }
 
 impl Glass {
@@ -40,16 +40,24 @@ impl Glass {
     /// `reflect`: color of reflected light
     /// `transmit`: color of transmitted light
     /// `eta`: refractive index of the material
-    pub fn new(reflect: Arc<Texture + Send + Sync>,
-               transmit: Arc<Texture + Send + Sync>,
-               eta: Arc<Texture + Send + Sync>) -> Glass {
-        Glass { reflect: reflect, transmit: transmit, eta: eta }
+    pub fn new(
+        reflect: Arc<dyn Texture + Send + Sync>,
+        transmit: Arc<dyn Texture + Send + Sync>,
+        eta: Arc<dyn Texture + Send + Sync>,
+    ) -> Glass {
+        Glass {
+            reflect: reflect,
+            transmit: transmit,
+            eta: eta,
+        }
     }
 }
 
 impl Material for Glass {
-    fn bsdf<'a, 'b, 'c>(&'a self, hit: &Intersection<'a, 'b>,
-                        alloc: &'c Allocator) -> BSDF<'c> where 'a: 'c {
+    fn bsdf<'a, 'b, 'c>(&'a self, hit: &Intersection<'a, 'b>, alloc: &'c Allocator) -> BSDF<'c>
+    where
+        'a: 'c,
+    {
         // TODO: I don't like this counting and junk we have to do to figure out
         // the slice size and then the indices. Is there a better way?
         let reflect = self.reflect.sample_color(hit.dg.u, hit.dg.v, hit.dg.time);
@@ -63,7 +71,7 @@ impl Material for Glass {
         if !transmit.is_black() {
             num_bxdfs += 1;
         }
-        let bxdfs = alloc.alloc_slice::<&BxDF>(num_bxdfs);
+        let bxdfs = alloc.alloc_slice::<&dyn BxDF>(num_bxdfs);
 
         let mut i = 0;
         let fresnel = alloc.alloc(Dielectric::new(1.0, eta));
@@ -77,5 +85,3 @@ impl Material for Glass {
         BSDF::new(bxdfs, eta, &hit.dg)
     }
 }
-
-

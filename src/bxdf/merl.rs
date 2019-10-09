@@ -3,12 +3,12 @@
 //! the data loaded from the BRDF file while actual loading is done by the MERL material
 //! when it's created.
 
-use std::f32;
 use enum_set::EnumSet;
+use std::f32;
 
-use linalg::{self, Vector};
-use film::Colorf;
 use bxdf::{self, BxDF, BxDFType};
+use film::Colorf;
+use linalg::{self, Vector};
 
 /// BRDF that uses measured data to model the surface reflectance properties.
 /// The measured data is from "A Data-Driven Reflectance Model",
@@ -29,7 +29,12 @@ pub struct Merl<'a> {
 impl<'a> Merl<'a> {
     /// Create a MERL BRDF to use data loaded from a MERL BRDF data file
     pub fn new(brdf: &'a [f32], n_theta_h: usize, n_theta_d: usize, n_phi_d: usize) -> Merl<'a> {
-        Merl { brdf: brdf, n_theta_h: n_theta_h, n_theta_d: n_theta_d, n_phi_d: n_phi_d }
+        Merl {
+            brdf: brdf,
+            n_theta_h: n_theta_h,
+            n_theta_d: n_theta_d,
+            n_phi_d: n_phi_d,
+        }
     }
     /// Re-map values from an angular value to the index in the MERL data table
     fn map_index(val: f32, max: f32, n_vals: usize) -> usize {
@@ -64,16 +69,28 @@ impl<'a> BxDF for Merl<'a> {
         let sin_phi_h = bxdf::sin_phi(&w_h);
         let cos_theta_h = bxdf::cos_theta(&w_h);
         let sin_theta_h = bxdf::sin_theta(&w_h);
-        let w_hx = Vector::new(cos_phi_h * cos_theta_h, sin_phi_h * cos_theta_h, -sin_theta_h);
+        let w_hx = Vector::new(
+            cos_phi_h * cos_theta_h,
+            sin_phi_h * cos_theta_h,
+            -sin_theta_h,
+        );
         let w_hy = Vector::new(-sin_phi_h, cos_phi_h, 0.0);
-        let w_d = Vector::new(linalg::dot(&w_i, &w_hx), linalg::dot(&w_i, &w_hy), linalg::dot(&w_i, &w_h));
+        let w_d = Vector::new(
+            linalg::dot(&w_i, &w_hx),
+            linalg::dot(&w_i, &w_hy),
+            linalg::dot(&w_i, &w_h),
+        );
         let theta_d = linalg::spherical_theta(&w_d);
         // Wrap phi_d if needed to keep it in range
         let phi_d = match linalg::spherical_phi(&w_d) {
             d if d > f32::consts::PI => d - f32::consts::PI,
             d => d,
         };
-        let theta_h_idx = Merl::map_index(f32::sqrt(f32::max(0.0, 2.0 * theta_h / f32::consts::PI)), 1.0, self.n_theta_h);
+        let theta_h_idx = Merl::map_index(
+            f32::sqrt(f32::max(0.0, 2.0 * theta_h / f32::consts::PI)),
+            1.0,
+            self.n_theta_h,
+        );
         let theta_d_idx = Merl::map_index(theta_d, f32::consts::PI / 2.0, self.n_theta_d);
         let phi_d_idx = Merl::map_index(phi_d, f32::consts::PI, self.n_phi_d);
         let i = phi_d_idx + self.n_phi_d * (theta_d_idx + theta_h_idx * self.n_theta_d);
@@ -81,4 +98,3 @@ impl<'a> BxDF for Merl<'a> {
         Colorf::new(self.brdf[3 * i], self.brdf[3 * i + 1], self.brdf[3 * i + 2])
     }
 }
-

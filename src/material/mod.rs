@@ -20,24 +20,24 @@
 
 use light_arena::Allocator;
 
-use geometry::Intersection;
 use bxdf::BSDF;
+use geometry::Intersection;
 
-pub use self::matte::Matte;
-pub use self::specular_metal::SpecularMetal;
 pub use self::glass::Glass;
+pub use self::matte::Matte;
 pub use self::merl::Merl;
-pub use self::plastic::Plastic;
 pub use self::metal::Metal;
+pub use self::plastic::Plastic;
 pub use self::rough_glass::RoughGlass;
+pub use self::specular_metal::SpecularMetal;
 
-pub mod matte;
-pub mod specular_metal;
 pub mod glass;
+pub mod matte;
 pub mod merl;
-pub mod plastic;
 pub mod metal;
+pub mod plastic;
 pub mod rough_glass;
+pub mod specular_metal;
 
 /// Trait implemented by materials. Provides method to get the BSDF describing
 /// the material properties at the intersection
@@ -47,7 +47,7 @@ pub trait Material {
     /// We have the lifetime constraint on the returned BSDF to enforce it does not
     /// outlive the material which produced it. This allows us to borrow things from
     /// the parent material in the BxDFs making up the BSDF.
-    fn bsdf<'a, 'b, 'c>(&'a self, hit: &Intersection<'a, 'b>,
-                        alloc: &'c Allocator) -> BSDF<'c> where 'a: 'c;
+    fn bsdf<'a, 'b, 'c>(&'a self, hit: &Intersection<'a, 'b>, alloc: &'c Allocator) -> BSDF<'c>
+    where
+        'a: 'c;
 }
-

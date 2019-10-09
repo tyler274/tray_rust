@@ -7,8 +7,10 @@ use std::mem;
 /// that the predicate returned false for. Also returns the index of the
 /// first element in the false group
 pub fn partition<'a, T: 'a, I, F>(mut it: I, pred: F) -> usize
-        where I: DoubleEndedIterator<Item = &'a mut T>,
-        F: Fn(&T) -> bool {
+where
+    I: DoubleEndedIterator<Item = &'a mut T>,
+    F: Fn(&T) -> bool,
+{
     let mut split_idx = 0;
     loop {
         let mut front = None;
@@ -31,7 +33,7 @@ pub fn partition<'a, T: 'a, I, F>(mut it: I, pred: F) -> usize
             (Some(f), Some(b)) => {
                 mem::swap(f, b);
                 split_idx += 1;
-            },
+            }
             _ => break,
         }
     }
@@ -50,4 +52,3 @@ fn test_partition() {
     assert!(vals.iter().take(3).fold(true, |f, x| *x % 2 == 0 && f));
     assert!(vals.iter().skip(3).fold(true, |f, x| *x % 2 != 0 && f));
 }
-

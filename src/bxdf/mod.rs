@@ -2,40 +2,44 @@
 //! material properties. Also provides the BSDF type which composes
 //! various BRDF/BTDFs to describe materials
 
-use std::mem;
+use enum_set::{CLike, EnumSet};
 use std::f32;
-use enum_set::{EnumSet, CLike};
+use std::mem;
 
-use linalg::{self, Vector};
 use film::Colorf;
+use linalg::{self, Vector};
 use mc;
 
 pub use self::bsdf::BSDF;
 pub use self::lambertian::Lambertian;
+pub use self::merl::Merl;
+pub use self::microfacet_transmission::MicrofacetTransmission;
 pub use self::oren_nayar::OrenNayar;
 pub use self::specular_reflection::SpecularReflection;
 pub use self::specular_transmission::SpecularTransmission;
-pub use self::merl::Merl;
 pub use self::torrance_sparrow::TorranceSparrow;
-pub use self::microfacet_transmission::MicrofacetTransmission;
 
 pub mod bsdf;
-pub mod lambertian;
-pub mod oren_nayar;
 pub mod fresnel;
-pub mod specular_reflection;
-pub mod specular_transmission;
+pub mod lambertian;
 pub mod merl;
 pub mod microfacet;
-pub mod torrance_sparrow;
 pub mod microfacet_transmission;
+pub mod oren_nayar;
+pub mod specular_reflection;
+pub mod specular_transmission;
+pub mod torrance_sparrow;
 
 /// Various types of BxDFs that can be selected to specify which
 /// types of surface functions should be evaluated
 #[repr(u32)]
 #[derive(Clone, Copy, Debug)]
 pub enum BxDFType {
-    Reflection, Transmission, Diffuse, Glossy, Specular,
+    Reflection,
+    Transmission,
+    Diffuse,
+    Glossy,
+    Specular,
 }
 
 impl BxDFType {
@@ -62,7 +66,9 @@ impl BxDFType {
     }
     /// Get an EnumSet containing all flags for all BxDFs. This would be all
     /// types of BRDFs and BTDFs
-    pub fn all() -> EnumSet<BxDFType> { BxDFType::all_brdf().union(BxDFType::all_btdf()) }
+    pub fn all() -> EnumSet<BxDFType> {
+        BxDFType::all_brdf().union(BxDFType::all_btdf())
+    }
     /// Get an EnumSet containing flags for all types of specular BxDFs
     pub fn specular() -> EnumSet<BxDFType> {
         let mut e = EnumSet::new();
@@ -83,8 +89,12 @@ impl BxDFType {
 }
 
 impl CLike for BxDFType {
-    fn to_u32(&self) -> u32 { *self as u32 }
-    unsafe fn from_u32(v: u32) -> BxDFType { mem::transmute(v) }
+    fn to_u32(&self) -> u32 {
+        *self as u32
+    }
+    unsafe fn from_u32(v: u32) -> BxDFType {
+        mem::transmute(v)
+    }
 }
 
 /// Trait implemented by BRDF/BTDFs in `tray_rust`. Provides methods for
@@ -122,13 +132,21 @@ pub trait BxDF {
 }
 
 /// Compute the value of cosine theta for a vector in shading space
-pub fn cos_theta(v: &Vector) -> f32 { v.z }
+pub fn cos_theta(v: &Vector) -> f32 {
+    v.z
+}
 /// Compute the value of cosine^2 theta for a vector in shading space
-pub fn cos_theta_sqr(v: &Vector) -> f32 { v.z * v.z }
+pub fn cos_theta_sqr(v: &Vector) -> f32 {
+    v.z * v.z
+}
 /// Compute the value of (sine theta)^2  for a vector in shading space
-pub fn sin_theta_sqr(v: &Vector) -> f32 { f32::max(0.0, 1.0 - v.z * v.z) }
+pub fn sin_theta_sqr(v: &Vector) -> f32 {
+    f32::max(0.0, 1.0 - v.z * v.z)
+}
 /// Compute the value of sine theta for a vector in shading space
-pub fn sin_theta(v: &Vector) -> f32 { f32::sqrt(sin_theta_sqr(v)) }
+pub fn sin_theta(v: &Vector) -> f32 {
+    f32::sqrt(sin_theta_sqr(v))
+}
 /// Compute the value of tan theta for a vector in shading space
 pub fn tan_theta(v: &Vector) -> f32 {
     let sin_theta_2 = sin_theta_sqr(v);
@@ -143,7 +161,9 @@ pub fn tan_theta_sqr(v: &Vector) -> f32 {
     sin_theta_sqr(v) / cos_theta_sqr(v)
 }
 /// Compute the value of arctan theta for a vector in shading space
-pub fn arctan_theta(v: &Vector) -> f32 { cos_theta(v) / sin_theta(v) }
+pub fn arctan_theta(v: &Vector) -> f32 {
+    cos_theta(v) / sin_theta(v)
+}
 /// Compute the value of cosine phi for a vector in shading space
 pub fn cos_phi(v: &Vector) -> f32 {
     let sin_theta = sin_theta(v);
@@ -163,5 +183,6 @@ pub fn sin_phi(v: &Vector) -> f32 {
     }
 }
 /// Check if two vectors are in the same hemisphere in shading space
-pub fn same_hemisphere(a: &Vector, b: &Vector) -> bool { a.z * b.z > 0.0 }
-
+pub fn same_hemisphere(a: &Vector, b: &Vector) -> bool {
+    a.z * b.z > 0.0
+}

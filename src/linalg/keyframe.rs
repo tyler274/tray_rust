@@ -4,7 +4,7 @@
 use bspline;
 use la;
 
-use linalg::{quaternion, Vector, Matrix4, Quaternion, Transform};
+use linalg::{quaternion, Matrix4, Quaternion, Transform, Vector};
 
 /// A transformation associated with a specific point in time. Note
 /// that this transform is now more implicit since they keyframe's times
@@ -21,11 +21,19 @@ impl Keyframe {
     /// be stored in a decomposed form, M = TRS.
     pub fn new(transform: &Transform) -> Keyframe {
         let (t, r, s) = Keyframe::decompose(transform);
-        Keyframe { translation: t, rotation: r, scaling: s }
+        Keyframe {
+            translation: t,
+            rotation: r,
+            scaling: s,
+        }
     }
     /// Construct the keyframe from the decomposed transformation
     pub fn from_parts(translation: &Vector, rotation: &Quaternion, scaling: &Vector) -> Keyframe {
-        Keyframe { translation: *translation, rotation: *rotation, scaling: *scaling }
+        Keyframe {
+            translation: *translation,
+            rotation: *rotation,
+            scaling: *scaling,
+        }
     }
     /// Decompose the transformation into its component translation, rotation and
     /// scaling operations.
@@ -34,9 +42,21 @@ impl Keyframe {
         let translation = Vector::new(*m.at(0, 3), *m.at(1, 3), *m.at(2, 3));
         // Robust matrix decomposition, based on Mitsuba:
         // We use SVD to extract rotation and scaling matrices that properly account for flip
-        let la_mat = la::Matrix::<f64>::new(3, 3, vec![*m.at(0, 0) as f64, *m.at(0, 1) as f64, *m.at(0, 2) as f64,
-                                                       *m.at(1, 0) as f64, *m.at(1, 1) as f64, *m.at(1, 2) as f64,
-                                                       *m.at(2, 0) as f64, *m.at(2, 1) as f64, *m.at(2, 2) as f64]);
+        let la_mat = la::Matrix::<f64>::new(
+            3,
+            3,
+            vec![
+                *m.at(0, 0) as f64,
+                *m.at(0, 1) as f64,
+                *m.at(0, 2) as f64,
+                *m.at(1, 0) as f64,
+                *m.at(1, 1) as f64,
+                *m.at(1, 2) as f64,
+                *m.at(2, 0) as f64,
+                *m.at(2, 1) as f64,
+                *m.at(2, 2) as f64,
+            ],
+        );
         // TODO: More explanation of the math going on here, why do we choose these matrices for
         // q and p. q is the basis transform of the matrix without scaling so it represents the
         // rotation, while p is the scaling transformed from the basis into the canonical basis
@@ -48,18 +68,33 @@ impl Keyframe {
             q = -q;
             p = -p;
         }
-        let rotation = Quaternion::from_matrix(
-                            &Matrix4::new([q.get(0, 0) as f32, q.get(0, 1) as f32, q.get(0, 2) as f32, 0.0,
-                                           q.get(1, 0) as f32, q.get(1, 1) as f32, q.get(1, 2) as f32, 0.0,
-                                           q.get(2, 0) as f32, q.get(2, 1) as f32, q.get(2, 2) as f32, 0.0,
-                                           0.0, 0.0, 0.0, 1.0]));
+        let rotation = Quaternion::from_matrix(&Matrix4::new([
+            q.get(0, 0) as f32,
+            q.get(0, 1) as f32,
+            q.get(0, 2) as f32,
+            0.0,
+            q.get(1, 0) as f32,
+            q.get(1, 1) as f32,
+            q.get(1, 2) as f32,
+            0.0,
+            q.get(2, 0) as f32,
+            q.get(2, 1) as f32,
+            q.get(2, 2) as f32,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0,
+        ]));
         let scaling = Vector::new(p.get(0, 0) as f32, p.get(1, 1) as f32, p.get(2, 2) as f32);
         (translation, rotation, scaling)
     }
     /// Return the transformation stored for this keyframe
     pub fn transform(&self) -> Transform {
         let m = self.rotation.to_matrix();
-        Transform::translate(&self.translation) * Transform::from_mat(&m) * Transform::scale(&self.scaling)
+        Transform::translate(&self.translation)
+            * Transform::from_mat(&m)
+            * Transform::scale(&self.scaling)
     }
 }
 
@@ -71,4 +106,3 @@ impl bspline::Interpolate for Keyframe {
         Keyframe::from_parts(&translation, &rotation, &scaling)
     }
 }
-

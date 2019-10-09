@@ -1,7 +1,7 @@
 //! Defines types for operating with floating point and 8 bit RGB colors
 
 use std::f32;
-use std::ops::{Add, Sub, Mul, Div, Neg, Index, IndexMut};
+use std::ops::{Add, Div, Index, IndexMut, Mul, Neg, Sub};
 
 use linalg;
 
@@ -20,24 +20,43 @@ pub struct Colorf {
 impl Colorf {
     /// Create an RGB color
     pub fn new(r: f32, g: f32, b: f32) -> Colorf {
-        Colorf { r: r, g: g, b: b, a: 1.0 }
+        Colorf {
+            r: r,
+            g: g,
+            b: b,
+            a: 1.0,
+        }
     }
     /// Create an RGB color
     pub fn with_alpha(r: f32, g: f32, b: f32, a: f32) -> Colorf {
-        Colorf { r: r, g: g, b: b, a: a }
+        Colorf {
+            r: r,
+            g: g,
+            b: b,
+            a: a,
+        }
     }
     /// Create an RGB color using the same value for all channels
     pub fn broadcast(r: f32) -> Colorf {
-        Colorf { r: r, g: r, b: r, a: r }
+        Colorf {
+            r: r,
+            g: r,
+            b: r,
+            a: r,
+        }
     }
     /// Create a black color
-    pub fn black() -> Colorf { Colorf::broadcast(0.0) }
+    pub fn black() -> Colorf {
+        Colorf::broadcast(0.0)
+    }
     /// Clamp the color values between [0, 1]
     pub fn clamp(&self) -> Colorf {
-        Colorf { r: linalg::clamp(self.r, 0.0, 1.0),
-                 g: linalg::clamp(self.g, 0.0, 1.0),
-                 b: linalg::clamp(self.b, 0.0, 1.0),
-                 a: linalg::clamp(self.a, 0.0, 1.0) }
+        Colorf {
+            r: linalg::clamp(self.r, 0.0, 1.0),
+            g: linalg::clamp(self.g, 0.0, 1.0),
+            b: linalg::clamp(self.b, 0.0, 1.0),
+            a: linalg::clamp(self.a, 0.0, 1.0),
+        }
     }
     /// Compute the luminance of the color
     pub fn luminance(&self) -> f32 {
@@ -53,7 +72,10 @@ impl Colorf {
     }
     /// Check if any of the color channels are infinite
     pub fn has_infs(&self) -> bool {
-        f32::is_infinite(self.r) || f32::is_infinite(self.g) || f32::is_infinite(self.b) || f32::is_infinite(self.a)
+        f32::is_infinite(self.r)
+            || f32::is_infinite(self.g)
+            || f32::is_infinite(self.b)
+            || f32::is_infinite(self.a)
     }
     /// Convert the linear RGB color to sRGB
     pub fn to_srgb(&self) -> Colorf {
@@ -71,8 +93,12 @@ impl Colorf {
     }
     /// Return the color with values { e^r, e^g, e^b }
     pub fn exp(&self) -> Colorf {
-        Colorf { r: f32::exp(self.r), g: f32::exp(self.g),
-                 b: f32::exp(self.b), a: f32::exp(self.a) }
+        Colorf {
+            r: f32::exp(self.r),
+            g: f32::exp(self.g),
+            b: f32::exp(self.b),
+            a: f32::exp(self.a),
+        }
     }
 }
 
@@ -80,7 +106,12 @@ impl Add for Colorf {
     type Output = Colorf;
     /// Add two colors together
     fn add(self, rhs: Colorf) -> Colorf {
-        Colorf { r: self.r + rhs.r, g: self.g + rhs.g, b: self.b + rhs.b, a: self.a + rhs.a }
+        Colorf {
+            r: self.r + rhs.r,
+            g: self.g + rhs.g,
+            b: self.b + rhs.b,
+            a: self.a + rhs.a,
+        }
     }
 }
 
@@ -88,7 +119,12 @@ impl Sub for Colorf {
     type Output = Colorf;
     /// Subtract the two colors
     fn sub(self, rhs: Colorf) -> Colorf {
-        Colorf { r: self.r - rhs.r, g: self.g - rhs.g, b: self.b - rhs.b, a: self.a - rhs.a }
+        Colorf {
+            r: self.r - rhs.r,
+            g: self.g - rhs.g,
+            b: self.b - rhs.b,
+            a: self.a - rhs.a,
+        }
     }
 }
 
@@ -96,7 +132,12 @@ impl Mul for Colorf {
     type Output = Colorf;
     /// Multiply the two colors
     fn mul(self, rhs: Colorf) -> Colorf {
-        Colorf { r: self.r * rhs.r, g: self.g * rhs.g, b: self.b * rhs.b, a: self.a * rhs.a }
+        Colorf {
+            r: self.r * rhs.r,
+            g: self.g * rhs.g,
+            b: self.b * rhs.b,
+            a: self.a * rhs.a,
+        }
     }
 }
 
@@ -104,7 +145,12 @@ impl Mul<f32> for Colorf {
     type Output = Colorf;
     /// Scale the color by the float
     fn mul(self, rhs: f32) -> Colorf {
-        Colorf { r: self.r * rhs, g: self.g * rhs, b: self.b * rhs, a: self.a * rhs }
+        Colorf {
+            r: self.r * rhs,
+            g: self.g * rhs,
+            b: self.b * rhs,
+            a: self.a * rhs,
+        }
     }
 }
 
@@ -112,7 +158,12 @@ impl Mul<Colorf> for f32 {
     type Output = Colorf;
     /// Scale the color by the float
     fn mul(self, rhs: Colorf) -> Colorf {
-        Colorf { r: self * rhs.r, g: self * rhs.g, b: self * rhs.b, a: self * rhs.a }
+        Colorf {
+            r: self * rhs.r,
+            g: self * rhs.g,
+            b: self * rhs.b,
+            a: self * rhs.a,
+        }
     }
 }
 
@@ -120,7 +171,12 @@ impl Div for Colorf {
     type Output = Colorf;
     /// Divide the channels of one color by another
     fn div(self, rhs: Colorf) -> Colorf {
-        Colorf { r: self.r / rhs.r, g: self.g / rhs.g, b: self.b / rhs.b, a: self.a / rhs.a }
+        Colorf {
+            r: self.r / rhs.r,
+            g: self.g / rhs.g,
+            b: self.b / rhs.b,
+            a: self.a / rhs.a,
+        }
     }
 }
 
@@ -128,7 +184,12 @@ impl Div<f32> for Colorf {
     type Output = Colorf;
     /// Divide the channels of the color by the float
     fn div(self, rhs: f32) -> Colorf {
-        Colorf { r: self.r / rhs, g: self.g / rhs, b: self.b / rhs, a: self.a / rhs }
+        Colorf {
+            r: self.r / rhs,
+            g: self.g / rhs,
+            b: self.b / rhs,
+            a: self.a / rhs,
+        }
     }
 }
 
@@ -136,14 +197,19 @@ impl Neg for Colorf {
     type Output = Colorf;
     /// Negate the color channels
     fn neg(self) -> Colorf {
-        Colorf { r: -self.r, g: -self.g, b: -self.b, a: -self.a }
+        Colorf {
+            r: -self.r,
+            g: -self.g,
+            b: -self.b,
+            a: -self.a,
+        }
     }
 }
 
 impl Index<usize> for Colorf {
     type Output = f32;
     /// Access the channels by index
-    /// 
+    ///
     /// - 0 = r
     /// - 1 = g
     /// - 2 = b
@@ -161,7 +227,7 @@ impl Index<usize> for Colorf {
 
 impl IndexMut<usize> for Colorf {
     /// Access the channels by index
-    /// 
+    ///
     /// - 0 = r
     /// - 1 = g
     /// - 2 = b
@@ -176,4 +242,3 @@ impl IndexMut<usize> for Colorf {
         }
     }
 }
-

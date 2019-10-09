@@ -1,5 +1,5 @@
 use std::iter::{FromIterator, IntoIterator};
-use std::ops::{Add, Sub, Mul};
+use std::ops::{Add, Mul, Sub};
 use std::slice::Iter;
 
 /// Matrix4 is a 4x4 matrix stored in row-major format
@@ -15,11 +15,11 @@ impl Matrix4 {
     }
     /// Return the identity matrix
     pub fn identity() -> Matrix4 {
-        Matrix4 { mat:
-            [1f32, 0f32, 0f32, 0f32,
-             0f32, 1f32, 0f32, 0f32,
-             0f32, 0f32, 1f32, 0f32,
-             0f32, 0f32, 0f32, 1f32]
+        Matrix4 {
+            mat: [
+                1f32, 0f32, 0f32, 0f32, 0f32, 1f32, 0f32, 0f32, 0f32, 0f32, 1f32, 0f32, 0f32, 0f32,
+                0f32, 1f32,
+            ],
         }
     }
     /// Create the matrix using the values passed
@@ -49,86 +49,86 @@ impl Matrix4 {
         //MESA's matrix inverse, tweaked for row-major matrices
         let mut inv = Matrix4::zero();
         inv.mat[0] = self.mat[5] * self.mat[10] * self.mat[15]
-            - self.mat[5]  * self.mat[11] * self.mat[14]
-            - self.mat[9]  * self.mat[6]  * self.mat[15]
-            + self.mat[9]  * self.mat[7]  * self.mat[14]
-            + self.mat[13] * self.mat[6]  * self.mat[11]
-            - self.mat[13] * self.mat[7]  * self.mat[10];
+            - self.mat[5] * self.mat[11] * self.mat[14]
+            - self.mat[9] * self.mat[6] * self.mat[15]
+            + self.mat[9] * self.mat[7] * self.mat[14]
+            + self.mat[13] * self.mat[6] * self.mat[11]
+            - self.mat[13] * self.mat[7] * self.mat[10];
 
-        inv.mat[4] = -self.mat[4]  * self.mat[10] * self.mat[15]
-            + self.mat[4]  * self.mat[11] * self.mat[14]
-            + self.mat[8]  * self.mat[6]  * self.mat[15]
-            - self.mat[8]  * self.mat[7]  * self.mat[14]
-            - self.mat[12] * self.mat[6]  * self.mat[11]
-            + self.mat[12] * self.mat[7]  * self.mat[10];
+        inv.mat[4] = -self.mat[4] * self.mat[10] * self.mat[15]
+            + self.mat[4] * self.mat[11] * self.mat[14]
+            + self.mat[8] * self.mat[6] * self.mat[15]
+            - self.mat[8] * self.mat[7] * self.mat[14]
+            - self.mat[12] * self.mat[6] * self.mat[11]
+            + self.mat[12] * self.mat[7] * self.mat[10];
 
-        inv.mat[8] = self.mat[4]  * self.mat[9] * self.mat[15]
-            - self.mat[4]  * self.mat[11] * self.mat[13]
-            - self.mat[8]  * self.mat[5] * self.mat[15]
-            + self.mat[8]  * self.mat[7] * self.mat[13]
+        inv.mat[8] = self.mat[4] * self.mat[9] * self.mat[15]
+            - self.mat[4] * self.mat[11] * self.mat[13]
+            - self.mat[8] * self.mat[5] * self.mat[15]
+            + self.mat[8] * self.mat[7] * self.mat[13]
             + self.mat[12] * self.mat[5] * self.mat[11]
             - self.mat[12] * self.mat[7] * self.mat[9];
 
-        inv.mat[12] = -self.mat[4]  * self.mat[9] * self.mat[14]
-            + self.mat[4]  * self.mat[10] * self.mat[13]
-            + self.mat[8]  * self.mat[5] * self.mat[14]
-            - self.mat[8]  * self.mat[6] * self.mat[13]
+        inv.mat[12] = -self.mat[4] * self.mat[9] * self.mat[14]
+            + self.mat[4] * self.mat[10] * self.mat[13]
+            + self.mat[8] * self.mat[5] * self.mat[14]
+            - self.mat[8] * self.mat[6] * self.mat[13]
             - self.mat[12] * self.mat[5] * self.mat[10]
             + self.mat[12] * self.mat[6] * self.mat[9];
 
-        inv.mat[1] = -self.mat[1]  * self.mat[10] * self.mat[15]
-            + self.mat[1]  * self.mat[11] * self.mat[14]
-            + self.mat[9]  * self.mat[2] * self.mat[15]
-            - self.mat[9]  * self.mat[3] * self.mat[14]
+        inv.mat[1] = -self.mat[1] * self.mat[10] * self.mat[15]
+            + self.mat[1] * self.mat[11] * self.mat[14]
+            + self.mat[9] * self.mat[2] * self.mat[15]
+            - self.mat[9] * self.mat[3] * self.mat[14]
             - self.mat[13] * self.mat[2] * self.mat[11]
             + self.mat[13] * self.mat[3] * self.mat[10];
 
-        inv.mat[5] = self.mat[0]  * self.mat[10] * self.mat[15]
-            - self.mat[0]  * self.mat[11] * self.mat[14]
-            - self.mat[8]  * self.mat[2] * self.mat[15]
-            + self.mat[8]  * self.mat[3] * self.mat[14]
+        inv.mat[5] = self.mat[0] * self.mat[10] * self.mat[15]
+            - self.mat[0] * self.mat[11] * self.mat[14]
+            - self.mat[8] * self.mat[2] * self.mat[15]
+            + self.mat[8] * self.mat[3] * self.mat[14]
             + self.mat[12] * self.mat[2] * self.mat[11]
             - self.mat[12] * self.mat[3] * self.mat[10];
 
-        inv.mat[9] = -self.mat[0]  * self.mat[9] * self.mat[15]
-            + self.mat[0]  * self.mat[11] * self.mat[13]
-            + self.mat[8]  * self.mat[1] * self.mat[15]
-            - self.mat[8]  * self.mat[3] * self.mat[13]
+        inv.mat[9] = -self.mat[0] * self.mat[9] * self.mat[15]
+            + self.mat[0] * self.mat[11] * self.mat[13]
+            + self.mat[8] * self.mat[1] * self.mat[15]
+            - self.mat[8] * self.mat[3] * self.mat[13]
             - self.mat[12] * self.mat[1] * self.mat[11]
             + self.mat[12] * self.mat[3] * self.mat[9];
 
-        inv.mat[13] = self.mat[0]  * self.mat[9] * self.mat[14]
-            - self.mat[0]  * self.mat[10] * self.mat[13]
-            - self.mat[8]  * self.mat[1] * self.mat[14]
-            + self.mat[8]  * self.mat[2] * self.mat[13]
+        inv.mat[13] = self.mat[0] * self.mat[9] * self.mat[14]
+            - self.mat[0] * self.mat[10] * self.mat[13]
+            - self.mat[8] * self.mat[1] * self.mat[14]
+            + self.mat[8] * self.mat[2] * self.mat[13]
             + self.mat[12] * self.mat[1] * self.mat[10]
             - self.mat[12] * self.mat[2] * self.mat[9];
 
-        inv.mat[2] = self.mat[1]  * self.mat[6] * self.mat[15]
-            - self.mat[1]  * self.mat[7] * self.mat[14]
-            - self.mat[5]  * self.mat[2] * self.mat[15]
-            + self.mat[5]  * self.mat[3] * self.mat[14]
+        inv.mat[2] = self.mat[1] * self.mat[6] * self.mat[15]
+            - self.mat[1] * self.mat[7] * self.mat[14]
+            - self.mat[5] * self.mat[2] * self.mat[15]
+            + self.mat[5] * self.mat[3] * self.mat[14]
             + self.mat[13] * self.mat[2] * self.mat[7]
             - self.mat[13] * self.mat[3] * self.mat[6];
 
-        inv.mat[6] = -self.mat[0]  * self.mat[6] * self.mat[15]
-            + self.mat[0]  * self.mat[7] * self.mat[14]
-            + self.mat[4]  * self.mat[2] * self.mat[15]
-            - self.mat[4]  * self.mat[3] * self.mat[14]
+        inv.mat[6] = -self.mat[0] * self.mat[6] * self.mat[15]
+            + self.mat[0] * self.mat[7] * self.mat[14]
+            + self.mat[4] * self.mat[2] * self.mat[15]
+            - self.mat[4] * self.mat[3] * self.mat[14]
             - self.mat[12] * self.mat[2] * self.mat[7]
             + self.mat[12] * self.mat[3] * self.mat[6];
 
-        inv.mat[10] = self.mat[0]  * self.mat[5] * self.mat[15]
-            - self.mat[0]  * self.mat[7] * self.mat[13]
-            - self.mat[4]  * self.mat[1] * self.mat[15]
-            + self.mat[4]  * self.mat[3] * self.mat[13]
+        inv.mat[10] = self.mat[0] * self.mat[5] * self.mat[15]
+            - self.mat[0] * self.mat[7] * self.mat[13]
+            - self.mat[4] * self.mat[1] * self.mat[15]
+            + self.mat[4] * self.mat[3] * self.mat[13]
             + self.mat[12] * self.mat[1] * self.mat[7]
             - self.mat[12] * self.mat[3] * self.mat[5];
 
-        inv.mat[14] = -self.mat[0]  * self.mat[5] * self.mat[14]
-            + self.mat[0]  * self.mat[6] * self.mat[13]
-            + self.mat[4]  * self.mat[1] * self.mat[14]
-            - self.mat[4]  * self.mat[2] * self.mat[13]
+        inv.mat[14] = -self.mat[0] * self.mat[5] * self.mat[14]
+            + self.mat[0] * self.mat[6] * self.mat[13]
+            + self.mat[4] * self.mat[1] * self.mat[14]
+            - self.mat[4] * self.mat[2] * self.mat[13]
             - self.mat[12] * self.mat[1] * self.mat[6]
             + self.mat[12] * self.mat[2] * self.mat[5];
 
@@ -160,8 +160,10 @@ impl Matrix4 {
             + self.mat[8] * self.mat[1] * self.mat[6]
             - self.mat[8] * self.mat[2] * self.mat[5];
 
-        let mut det = self.mat[0] * inv.mat[0] + self.mat[1] * inv.mat[4]
-            + self.mat[2] * inv.mat[8] + self.mat[3] * inv.mat[12];
+        let mut det = self.mat[0] * inv.mat[0]
+            + self.mat[1] * inv.mat[4]
+            + self.mat[2] * inv.mat[8]
+            + self.mat[3] * inv.mat[12];
         assert!(det != 0f32);
         det = 1f32 / det;
 
@@ -217,7 +219,11 @@ impl Add for Matrix4 {
     type Output = Matrix4;
     /// Add two matrices together
     fn add(self, rhs: Matrix4) -> Matrix4 {
-        self.mat.iter().zip(rhs.mat.iter()).map(|(&x, &y)| x + y).collect()
+        self.mat
+            .iter()
+            .zip(rhs.mat.iter())
+            .map(|(&x, &y)| x + y)
+            .collect()
     }
 }
 
@@ -225,7 +231,11 @@ impl Sub for Matrix4 {
     type Output = Matrix4;
     /// Subtract two matrices
     fn sub(self, rhs: Matrix4) -> Matrix4 {
-        self.mat.iter().zip(rhs.mat.iter()).map(|(&x, &y)| x - y).collect()
+        self.mat
+            .iter()
+            .zip(rhs.mat.iter())
+            .map(|(&x, &y)| x - y)
+            .collect()
     }
 }
 
@@ -268,10 +278,10 @@ fn test_add() {
     *a.at_mut(0, 1) = 1f32;
     let mut b = Matrix4::identity();
     *b.at_mut(2, 3) = 3f32;
-    let c = Matrix4::new([2f32, 1f32, 0f32, 0f32,
-                          0f32, 2f32, 0f32, 0f32,
-                          0f32, 0f32, 2f32, 3f32,
-                          0f32, 0f32, 0f32, 2f32]);
+    let c = Matrix4::new([
+        2f32, 1f32, 0f32, 0f32, 0f32, 2f32, 0f32, 0f32, 0f32, 0f32, 2f32, 3f32, 0f32, 0f32, 0f32,
+        2f32,
+    ]);
     assert!(a + b == c);
 }
 #[test]
@@ -280,27 +290,26 @@ fn test_sub() {
     *a.at_mut(0, 1) = 1f32;
     let mut b = Matrix4::identity();
     *b.at_mut(2, 3) = 3f32;
-    let c = Matrix4::new([0f32, 1f32, 0f32, 0f32,
-                          0f32, 0f32, 0f32, 0f32,
-                          0f32, 0f32, 0f32, -3f32,
-                          0f32, 0f32, 0f32, 0f32]);
+    let c = Matrix4::new([
+        0f32, 1f32, 0f32, 0f32, 0f32, 0f32, 0f32, 0f32, 0f32, 0f32, 0f32, -3f32, 0f32, 0f32, 0f32,
+        0f32,
+    ]);
     assert!(a - b == c);
 }
 #[test]
 fn test_mul() {
     assert!(Matrix4::identity() * Matrix4::identity() == Matrix4::identity());
-    let a = Matrix4::new([1f32,  2f32,  1f32,  0f32,
-                         3f32,  1f32,  4f32,  2f32,
-                         1f32,  2f32, -5f32,  4f32,
-                         3f32,  2f32,  4f32,  1f32]);
-    let b = Matrix4::new([8f32,  0f32,  2f32,  3f32,
-                          -2f32,  1f32,  0f32,  1f32,
-                          5f32, -2f32,  3f32,  1f32,
-                          0f32,  0f32,  4f32,  1f32]);
-    let c = Matrix4::new([9f32,   0f32,   5f32,   6f32,
-                          42f32,  -7f32,  26f32,  16f32,
-                          -21f32,  12f32,   3f32,   4f32,
-                          40f32,  -6f32,  22f32,  16f32]);
+    let a = Matrix4::new([
+        1f32, 2f32, 1f32, 0f32, 3f32, 1f32, 4f32, 2f32, 1f32, 2f32, -5f32, 4f32, 3f32, 2f32, 4f32,
+        1f32,
+    ]);
+    let b = Matrix4::new([
+        8f32, 0f32, 2f32, 3f32, -2f32, 1f32, 0f32, 1f32, 5f32, -2f32, 3f32, 1f32, 0f32, 0f32, 4f32,
+        1f32,
+    ]);
+    let c = Matrix4::new([
+        9f32, 0f32, 5f32, 6f32, 42f32, -7f32, 26f32, 16f32, -21f32, 12f32, 3f32, 4f32, 40f32,
+        -6f32, 22f32, 16f32,
+    ]);
     assert!(a * b == c);
 }
-

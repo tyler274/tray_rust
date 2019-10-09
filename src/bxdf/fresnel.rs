@@ -43,7 +43,12 @@ impl Dielectric {
     /// Create a new Dielectric Fresnel term for the boundary between two objects.
     /// `eta_i`: refractive index of the material the light is coming from.
     /// `eta_t`: refractive index of the material the light is entering.
-    pub fn new(eta_i: f32, eta_t: f32) -> Dielectric { Dielectric { eta_i: eta_i, eta_t: eta_t } }
+    pub fn new(eta_i: f32, eta_t: f32) -> Dielectric {
+        Dielectric {
+            eta_i: eta_i,
+            eta_t: eta_t,
+        }
+    }
 }
 
 impl Fresnel for Dielectric {
@@ -51,12 +56,11 @@ impl Fresnel for Dielectric {
         // We need to find out which side of the material we're incident on so
         // we can pass the correct indices of refraction
         let ci = linalg::clamp(cos_i, -1.0, 1.0);
-        let (ei, et) =
-            if ci > 0.0 {
-                (self.eta_i, self.eta_t)
-            } else {
-                (self.eta_t, self.eta_i)
-            };
+        let (ei, et) = if ci > 0.0 {
+            (self.eta_i, self.eta_t)
+        } else {
+            (self.eta_t, self.eta_i)
+        };
         let sin_t = ei / et * f32::sqrt(f32::max(0.0, 1.0 - ci * ci));
         // Handle total internal reflection
         if sin_t >= 1.0 {
@@ -81,10 +85,13 @@ impl Conductor {
     /// Create a new Conductor Fresnel term for the object.
     /// `eta`: refractive index of the material.
     /// `k`: absorption coefficient of the material.
-    pub fn new(eta: &Colorf, k: &Colorf) -> Conductor { Conductor { eta: *eta, k: *k } }
+    pub fn new(eta: &Colorf, k: &Colorf) -> Conductor {
+        Conductor { eta: *eta, k: *k }
+    }
 }
 
 impl Fresnel for Conductor {
-    fn fresnel(&self, cos_i: f32) -> Colorf { conductor(f32::abs(cos_i), &self.eta, &self.k) }
+    fn fresnel(&self, cos_i: f32) -> Colorf {
+        conductor(f32::abs(cos_i), &self.eta, &self.k)
+    }
 }
-

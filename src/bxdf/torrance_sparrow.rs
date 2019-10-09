@@ -2,31 +2,38 @@
 //! [Walter et al. 07](https://www.cs.cornell.edu/~srm/publications/EGSR07-btdf.pdf)
 //! for details.
 
-use std::f32;
 use enum_set::EnumSet;
+use std::f32;
 
-use linalg::{self, Vector};
-use film::Colorf;
-use bxdf::{self, BxDF, BxDFType};
 use bxdf::fresnel::Fresnel;
-use bxdf::microfacet::{MicrofacetDistribution};
+use bxdf::microfacet::MicrofacetDistribution;
+use bxdf::{self, BxDF, BxDFType};
+use film::Colorf;
+use linalg::{self, Vector};
 
 /// Struct providing the Torrance Sparrow BRDF, implemented as described in
 /// [Walter et al. 07](https://www.cs.cornell.edu/~srm/publications/EGSR07-btdf.pdf)
 #[derive(Copy, Clone)]
 pub struct TorranceSparrow<'a> {
     reflectance: Colorf,
-    fresnel: &'a Fresnel,
+    fresnel: &'a dyn Fresnel,
     /// Microfacet distribution describing the structure of the microfacets of
     /// the material
-    microfacet: &'a MicrofacetDistribution,
+    microfacet: &'a dyn MicrofacetDistribution,
 }
 
 impl<'a> TorranceSparrow<'a> {
     /// Create a new Torrance Sparrow microfacet BRDF
-    pub fn new(c: &Colorf, fresnel: &'a Fresnel, microfacet: &'a MicrofacetDistribution)
-        -> TorranceSparrow<'a> {
-        TorranceSparrow { reflectance: *c, fresnel: fresnel, microfacet: microfacet }
+    pub fn new(
+        c: &Colorf,
+        fresnel: &'a dyn Fresnel,
+        microfacet: &'a dyn MicrofacetDistribution,
+    ) -> TorranceSparrow<'a> {
+        TorranceSparrow {
+            reflectance: *c,
+            fresnel: fresnel,
+            microfacet: microfacet,
+        }
     }
 }
 
@@ -41,11 +48,11 @@ impl<'a> BxDF for TorranceSparrow<'a> {
         let cos_to = f32::abs(bxdf::cos_theta(w_o));
         let cos_ti = f32::abs(bxdf::cos_theta(w_i));
         if cos_to == 0.0 || cos_ti == 0.0 {
-            return Colorf::new(0.0, 0.0, 0.0)
+            return Colorf::new(0.0, 0.0, 0.0);
         }
         let mut w_h = *w_i + *w_o;
         if w_h == Vector::broadcast(0.0) {
-            return Colorf::new(0.0, 0.0, 0.0)
+            return Colorf::new(0.0, 0.0, 0.0);
         }
         w_h = w_h.normalized();
         let d = self.microfacet.normal_distribution(&w_h);
@@ -55,7 +62,7 @@ impl<'a> BxDF for TorranceSparrow<'a> {
     }
     fn sample(&self, w_o: &Vector, samples: &(f32, f32)) -> (Colorf, Vector, f32) {
         if w_o.z == 0.0 {
-            return (Colorf::black(), Vector::broadcast(0.0), 0.0)
+            return (Colorf::black(), Vector::broadcast(0.0), 0.0);
         }
         let mut w_h = self.microfacet.sample(w_o, samples);
         if !bxdf::same_hemisphere(w_o, &w_h) {
@@ -80,4 +87,3 @@ impl<'a> BxDF for TorranceSparrow<'a> {
         }
     }
 }
-

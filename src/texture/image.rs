@@ -1,8 +1,8 @@
-use image::{self, GenericImage};
+use image::{self, GenericImageView, Pixel};
 
-use linalg::clamp;
 use film::Colorf;
-use texture::{Texture, bilinear_interpolate};
+use linalg::clamp;
+use texture::{bilinear_interpolate, Texture};
 
 /// An `Image` texture is a `Texture` whose samples come
 /// from an image file.
@@ -18,17 +18,20 @@ impl Image {
         let dims = self.img.dimensions();
         let x = clamp(x, 0, dims.0 - 1);
         let y = clamp(y, 0, dims.1 - 1);
-        self.img.get_pixel(x, y).data[0] as f32 / 255.0
+        // self.img.get_pixel(x, y).data[0] as f32 / 255.0
+        self.img.get_pixel(x, y).channels()[0] as f32 / 255.0
     }
     fn get_color(&self, x: u32, y: u32) -> Colorf {
         let dims = self.img.dimensions();
         let x = clamp(x, 0, dims.0 - 1);
         let y = clamp(y, 0, dims.1 - 1);
         let px = self.img.get_pixel(x, y);
-        Colorf::with_alpha(px.data[0] as f32 / 255.0,
-                           px.data[1] as f32 / 255.0,
-                           px.data[2] as f32 / 255.0,
-                           px.data[3] as f32 / 255.0)
+        Colorf::with_alpha(
+            px.channels()[0] as f32 / 255.0,
+            px.channels()[1] as f32 / 255.0,
+            px.channels()[2] as f32 / 255.0,
+            px.channels()[3] as f32 / 255.0,
+        )
     }
 }
 
@@ -45,4 +48,3 @@ impl Texture for Image {
         bilinear_interpolate(x, y, |px, py| self.get_color(px, py))
     }
 }
-

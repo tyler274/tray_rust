@@ -2,21 +2,24 @@
 //! portions of the image they should render and collects their results to combine
 //! into the final image.
 
-use std::path::PathBuf;
-use std::io::prelude::*;
 use std::collections::HashMap;
-use std::net::ToSocketAddrs;
+use std::io::prelude::*;
 use std::iter;
+use std::net::ToSocketAddrs;
+use std::path::PathBuf;
 use std::time::SystemTime;
 
-use bincode::{Infinite, serialize, deserialize};
+use bincode::{deserialize, serialize};
 use image;
-use mio::tcp::{TcpStream, Shutdown};
+use mio::tcp::{Shutdown, TcpStream};
 use mio::*;
+// use tokio::io;
+// use tokio::net::TcpStream;
+// use tokio::prelude::*;
 
-use film::Image;
+use exec::distrib::{worker, Frame, Instructions};
 use exec::Config;
-use exec::distrib::{worker, Instructions, Frame};
+use film::Image;
 use sampler::BlockQueue;
 
 /// Stores distributed rendering status. The frame is either `InProgress` and contains
@@ -57,7 +60,11 @@ struct WorkerBuffer {
 
 impl WorkerBuffer {
     pub fn new() -> WorkerBuffer {
-        WorkerBuffer { buf: Vec::new(), expected_size: 8, currently_read: 0 }
+        WorkerBuffer {
+            buf: Vec::new(),
+            expected_size: 8,
+            currently_read: 0,
+        }
     }
 }
 
@@ -85,8 +92,11 @@ pub struct Master {
 impl Master {
     /// Create a new master that will contact the worker nodes passed and
     /// send instructions on what parts of the scene to start rendering
-    pub fn start_workers(workers: Vec<String>, config: Config, img_dim: (usize, usize))
-                         -> (Master, EventLoop<Master>) {
+    pub fn start_workers(
+        workers: Vec<String>,
+        config: Config,
+        img_dim: (usize, usize),
+    ) -> (Master, EventLoop<Master>) {
         // Figure out how many blocks we have for this image and assign them to our workers
         let queue = BlockQueue::new((img_dim.0 as u32, img_dim.1 as u32), (8, 8), (0, 0));
         let blocks_per_worker = queue.len() / workers.len();
@@ -97,25 +107,37 @@ impl Master {
 
         // Connect to each worker and add them to the event loop
         for (i, host) in workers.iter().enumerate() {
-            let addr = (&host[..], worker::PORT).to_socket_addrs().unwrap().next().unwrap();
+            let addr = (&host[..], worker::PORT)
+                .to_socket_addrs()
+                .unwrap()
+                .next()
+                .unwrap();
             match TcpStream::connect(&addr) {
                 Ok(stream) => {
                     // Each worker is identified in the event loop by their index in the vec
-                    if let Err(e) = event_loop.register(&stream, Token(i), EventSet::all(), PollOpt::level()) {
+                    if let Err(e) =
+                        event_loop.register(&stream, Token(i), EventSet::all(), PollOpt::level())
+                    {
                         panic!("Error registering stream from {}: {}", host, e);
                     }
                     connections.push(stream);
-                },
+                }
                 Err(e) => panic!("Failed to contact worker {}: {:?}", host, e),
             }
         }
-        let worker_buffers: Vec<_> = iter::repeat(WorkerBuffer::new()).take(workers.len()).collect();
-        let master = Master { workers: workers, connections: connections,
-                              worker_buffers: worker_buffers, config: config,
-                              frames: HashMap::new(),
-                              img_dim: img_dim,
-                              blocks_per_worker: blocks_per_worker,
-                              blocks_remainder: blocks_remainder };
+        let worker_buffers: Vec<_> = iter::repeat(WorkerBuffer::new())
+            .take(workers.len())
+            .collect();
+        let master = Master {
+            workers: workers,
+            connections: connections,
+            worker_buffers: worker_buffers,
+            config: config,
+            frames: HashMap::new(),
+            img_dim: img_dim,
+            blocks_per_worker: blocks_per_worker,
+            blocks_remainder: blocks_remainder,
+        };
         (master, event_loop)
     }
     /// Read a result frame from a worker and save it into the list of frames we're collecting from
@@ -125,36 +147,61 @@ impl Master {
         let frame_num = frame.frame as usize;
         let img_dim = self.img_dim;
         // Find the frame being reported and create it if we haven't received parts of this frame yet
-        let mut df = self.frames.entry(frame_num).or_insert_with(|| DistributedFrame::start(img_dim));
+        let df = self
+            .frames
+            .entry(frame_num)
+            .or_insert_with(|| DistributedFrame::start(img_dim));
 
         let mut finished = false;
         match *df {
-            DistributedFrame::InProgress { ref mut num_reporting, ref mut render, ref first_tile_recv } => {
+            DistributedFrame::InProgress {
+                ref mut num_reporting,
+                ref mut render,
+                ref first_tile_recv,
+            } => {
                 // Collect results from the worker and see if we've finished the frame and can save
                 // it out
                 render.add_blocks(frame.block_size, &frame.blocks, &frame.pixels);
                 *num_reporting += 1;
                 if *num_reporting == self.workers.len() {
-                    let render_time = first_tile_recv.elapsed().expect("Failed to get rendering time?");
+                    let render_time = first_tile_recv
+                        .elapsed()
+                        .expect("Failed to get rendering time?");
                     let out_file = match self.config.out_path.extension() {
                         Some(_) => self.config.out_path.clone(),
-                        None => self.config.out_path.join(
-                            PathBuf::from(format!("frame{:05}.png", frame_num))),
+                        None => self
+                            .config
+                            .out_path
+                            .join(PathBuf::from(format!("frame{:05}.png", frame_num))),
                     };
                     let img = render.get_srgb8();
                     let dim = render.dimensions();
-                    match image::save_buffer(&out_file.as_path(), &img[..], dim.0 as u32,
-                    dim.1 as u32, image::RGB(8)) {
-                        Ok(_) => {},
+                    match image::save_buffer(
+                        &out_file.as_path(),
+                        &img[..],
+                        dim.0 as u32,
+                        dim.1 as u32,
+                        image::RGB(8),
+                    ) {
+                        Ok(_) => {}
                         Err(e) => println!("Error saving image, {}", e),
                     };
-                    println!("Frame {}: time between receiving first and last tile {:4}s",
-                             frame_num, render_time.as_secs() as f64 + render_time.subsec_nanos() as f64 * 1e-9);
-                    println!("Frame {}: rendered to '{}'\n--------------------", frame_num, out_file.display());
+                    println!(
+                        "Frame {}: time between receiving first and last tile {:4}s",
+                        frame_num,
+                        render_time.as_secs() as f64 + render_time.subsec_nanos() as f64 * 1e-9
+                    );
+                    println!(
+                        "Frame {}: rendered to '{}'\n--------------------",
+                        frame_num,
+                        out_file.display()
+                    );
                     finished = true;
                 }
-            },
-            DistributedFrame::Completed => println!("Worker reporting on completed frame {}?", frame_num),
+            }
+            DistributedFrame::Completed => {
+                println!("Worker reporting on completed frame {}?", frame_num)
+            }
         }
         // This is a bit awkward, since we borrow df in the match we can't mark it finished in there
         if finished {
@@ -171,21 +218,28 @@ impl Master {
             buf.buf.extend(iter::repeat(0u8).take(8));
             match self.connections[worker].read(&mut buf.buf[buf.currently_read..]) {
                 Ok(n) => buf.currently_read += n,
-                Err(e) => println!("Error reading results from worker {}: {}", self.workers[worker], e),
+                Err(e) => println!(
+                    "Error reading results from worker {}: {}",
+                    self.workers[worker], e
+                ),
             }
             if buf.currently_read == buf.expected_size {
                 // How many bytes we expect to get from the worker for a frame
                 buf.expected_size = deserialize(&buf.buf[..]).unwrap();
                 // Extend the Vec so we've got enough room for the remaning bytes, minus the 8 for the
                 // encoded size header
-                buf.buf.extend(iter::repeat(0u8).take(buf.expected_size - 8));
+                buf.buf
+                    .extend(iter::repeat(0u8).take(buf.expected_size - 8));
             }
         }
         // If we've finished reading the size header we can now start reading the frame data
         if buf.currently_read >= 8 {
             match self.connections[worker].read(&mut buf.buf[buf.currently_read..]) {
                 Ok(n) => buf.currently_read += n,
-                Err(e) => println!("Error reading results from worker {}: {}", self.workers[worker], e),
+                Err(e) => println!(
+                    "Error reading results from worker {}: {}",
+                    self.workers[worker], e
+                ),
             }
         }
         buf.currently_read == buf.expected_size
@@ -216,24 +270,34 @@ impl Handler for Master {
         // A worker is ready to receive instructions from us
         if event.is_writable() {
             let b_start = worker * self.blocks_per_worker;
-            let b_count =
-                if worker == self.workers.len() - 1 {
-                    self.blocks_per_worker + self.blocks_remainder
-                } else {
-                    self.blocks_per_worker
-                };
-            let instr = Instructions::new(&self.config.scene_file,
-                                          (self.config.frame_info.start, self.config.frame_info.end),
-                                          b_start, b_count);
+            let b_count = if worker == self.workers.len() - 1 {
+                self.blocks_per_worker + self.blocks_remainder
+            } else {
+                self.blocks_per_worker
+            };
+            let instr = Instructions::new(
+                &self.config.scene_file,
+                (self.config.frame_info.start, self.config.frame_info.end),
+                b_start,
+                b_count,
+            );
             // Encode and send our instructions to the worker
-            let bytes = serialize(&instr, Infinite).unwrap();
+            let bytes = serialize(&instr).unwrap();
             if let Err(e) = self.connections[worker].write_all(&bytes[..]) {
-                println!("Failed to send instructions to {}: {:?}", self.workers[worker], e);
+                println!(
+                    "Failed to send instructions to {}: {:?}",
+                    self.workers[worker], e
+                );
             }
             // Register that we no longer care about writable events on this connection
-            event_loop.reregister(&self.connections[worker], token,
-                                  EventSet::readable() | EventSet::error() | EventSet::hup(),
-                                  PollOpt::level()).expect("Re-registering failed");
+            event_loop
+                .reregister(
+                    &self.connections[worker],
+                    token,
+                    EventSet::readable() | EventSet::error() | EventSet::hup(),
+                    PollOpt::level(),
+                )
+                .expect("Re-registering failed");
         }
         // Some results are available from a worker
         // Read results from the worker, if we've accumulated all the data being sent
@@ -248,13 +312,10 @@ impl Handler for Master {
         }
         // After getting results from the worker we check if we've completed all our frames
         // and exit if so
-        let all_complete = self.frames.values().fold(true,
-                                |all, v| {
-                                    match *v {
-                                        DistributedFrame::Completed => true && all,
-                                        _ => false,
-                                    }
-                                });
+        let all_complete = self.frames.values().fold(true, |all, v| match *v {
+            DistributedFrame::Completed => true && all,
+            _ => false,
+        });
         // The frame start/end range is inclusive, so we must add 1 here
         let num_frames = self.config.frame_info.end - self.config.frame_info.start + 1;
         if self.frames.len() == num_frames && all_complete {
@@ -262,4 +323,3 @@ impl Handler for Master {
         }
     }
 }
-

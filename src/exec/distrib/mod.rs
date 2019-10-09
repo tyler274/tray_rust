@@ -40,11 +40,11 @@
 
 use bincode::serialized_size;
 
-pub use self::worker::Worker;
 pub use self::master::Master;
+pub use self::worker::Worker;
 
-pub mod worker;
 pub mod master;
+pub mod worker;
 
 /// Stores instructions sent to a worker about which blocks it should be rendering,
 /// block size is assumed to be 8x8
@@ -64,11 +64,20 @@ struct Instructions {
 }
 
 impl Instructions {
-    pub fn new(scene: &str, frames: (usize, usize), block_start: usize,
-               block_count: usize) -> Instructions {
-        let mut instr = Instructions { encoded_size: 0, scene: scene.to_owned(), frames: frames,
-                       block_start: block_start, block_count: block_count };
-        instr.encoded_size = serialized_size(&instr);
+    pub fn new(
+        scene: &str,
+        frames: (usize, usize),
+        block_start: usize,
+        block_count: usize,
+    ) -> Instructions {
+        let mut instr = Instructions {
+            encoded_size: 0,
+            scene: scene.to_owned(),
+            frames: frames,
+            block_start: block_start,
+            block_count: block_count,
+        };
+        instr.encoded_size = serialized_size(&instr).expect("serialization error");
         instr
     }
 }
@@ -90,12 +99,20 @@ struct Frame {
 }
 
 impl Frame {
-    pub fn new(frame: usize, block_size: (usize, usize), blocks: Vec<(usize, usize)>,
-               pixels: Vec<f32>) -> Frame {
-        let mut frame = Frame { encoded_size: 0, frame: frame, block_size: block_size,
-                            blocks: blocks, pixels: pixels };
-        frame.encoded_size = serialized_size(&frame);
+    pub fn new(
+        frame: usize,
+        block_size: (usize, usize),
+        blocks: Vec<(usize, usize)>,
+        pixels: Vec<f32>,
+    ) -> Frame {
+        let mut frame = Frame {
+            encoded_size: 0,
+            frame: frame,
+            block_size: block_size,
+            blocks: blocks,
+            pixels: pixels,
+        };
+        frame.encoded_size = serialized_size(&frame).expect("serialization error");
         frame
     }
 }
-

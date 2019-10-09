@@ -23,33 +23,33 @@
 //! ]
 //! ```
 
-use linalg::{Point, Vector, Ray, Normal};
+use linalg::{Normal, Point, Ray, Vector};
 
-pub use self::differential_geometry::DifferentialGeometry;
-pub use self::intersection::Intersection;
-pub use self::instance::Instance;
-pub use self::sphere::Sphere;
-pub use self::disk::Disk;
-pub use self::rectangle::Rectangle;
+pub use self::animated_mesh::AnimatedMesh;
 pub use self::bbox::BBox;
 pub use self::bvh::BVH;
-pub use self::mesh::Mesh;
-pub use self::animated_mesh::AnimatedMesh;
-pub use self::receiver::Receiver;
+pub use self::differential_geometry::DifferentialGeometry;
+pub use self::disk::Disk;
 pub use self::emitter::Emitter;
+pub use self::instance::Instance;
+pub use self::intersection::Intersection;
+pub use self::mesh::Mesh;
+pub use self::receiver::Receiver;
+pub use self::rectangle::Rectangle;
+pub use self::sphere::Sphere;
 
-pub mod differential_geometry;
-pub mod intersection;
-pub mod instance;
-pub mod sphere;
-pub mod disk;
-pub mod rectangle;
+pub mod animated_mesh;
 pub mod bbox;
 pub mod bvh;
-pub mod mesh;
-pub mod animated_mesh;
-pub mod receiver;
+pub mod differential_geometry;
+pub mod disk;
 pub mod emitter;
+pub mod instance;
+pub mod intersection;
+pub mod mesh;
+pub mod receiver;
+pub mod rectangle;
+pub mod sphere;
 
 /// Trait implemented by geometric primitives
 pub trait Geometry {
@@ -61,6 +61,7 @@ pub trait Geometry {
     fn intersect(&self, ray: &mut Ray) -> Option<DifferentialGeometry>;
 }
 
+#[allow(unused)]
 /// Trait implemented by scene objects that can report an AABB describing their bounds
 pub trait Boundable {
     /// Get an AABB reporting the object's bounds over the time period

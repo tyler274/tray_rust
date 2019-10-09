@@ -1,9 +1,9 @@
 //! Provides a Quaternion type for properly interpolating rotations
 
 use std::f32;
-use std::ops::{Add, Sub, Mul, Div, Neg};
+use std::ops::{Add, Div, Mul, Neg, Sub};
 
-use linalg::{self, Vector, Transform, Matrix4};
+use linalg::{self, Matrix4, Transform, Vector};
 
 /// Quaternions describe a rotation in 3d space but can be
 /// properly interpolated unlike rotation matrices. The quaternion
@@ -18,7 +18,10 @@ pub struct Quaternion {
 impl Quaternion {
     /// Construct an identity quaternion
     pub fn identity() -> Quaternion {
-        Quaternion { v: Vector::broadcast(0.0), w: 1.0 }
+        Quaternion {
+            v: Vector::broadcast(0.0),
+            w: 1.0,
+        }
     }
     /// Construct a quaternion from the rotation matrix
     /// Based on Shoemake 1991
@@ -29,9 +32,13 @@ impl Quaternion {
             let mut s = f32::sqrt(trace + 1.0);
             let w = s / 2.0;
             s = 0.5 / s;
-            Quaternion { v: Vector::new(s * (*m.at(2, 1) - *m.at(1, 2)), s * (*m.at(0, 2) - *m.at(2, 0)),
-                                        s * (*m.at(1, 0) - *m.at(0, 1))),
-                         w: w
+            Quaternion {
+                v: Vector::new(
+                    s * (*m.at(2, 1) - *m.at(1, 2)),
+                    s * (*m.at(0, 2) - *m.at(2, 0)),
+                    s * (*m.at(1, 0) - *m.at(0, 1)),
+                ),
+                w: w,
             }
         } else {
             // Compute largest of x, y or z then the remaining components
@@ -63,24 +70,25 @@ impl Quaternion {
     }
     /// Get the rotation transform described by this quaternion
     pub fn to_matrix(&self) -> Matrix4 {
-        Matrix4::new(
-            [1.0 - 2.0 * (f32::powf(self.v.y, 2.0) + f32::powf(self.v.z, 2.0)),
-             2.0 * (self.v.x * self.v.y + self.v.z * self.w),
-             2.0 * (self.v.x * self.v.z - self.v.y * self.w),
-             0.0,
-
-             2.0 * (self.v.x * self.v.y - self.v.z * self.w),
-             1.0 - 2.0 * (f32::powf(self.v.x, 2.0) + f32::powf(self.v.z, 2.0)),
-             2.0 * (self.v.y * self.v.z + self.v.x * self.w),
-             0.0,
-
-             2.0 * (self.v.x * self.v.z + self.v.y * self.w),
-             2.0 * (self.v.y * self.v.z - self.v.x * self.w),
-             1.0 - 2.0 * (f32::powf(self.v.x, 2.0) + f32::powf(self.v.y, 2.0)),
-             0.0,
-
-             0.0, 0.0, 0.0, 1.0
-            ]).transpose()
+        Matrix4::new([
+            1.0 - 2.0 * (f32::powf(self.v.y, 2.0) + f32::powf(self.v.z, 2.0)),
+            2.0 * (self.v.x * self.v.y + self.v.z * self.w),
+            2.0 * (self.v.x * self.v.z - self.v.y * self.w),
+            0.0,
+            2.0 * (self.v.x * self.v.y - self.v.z * self.w),
+            1.0 - 2.0 * (f32::powf(self.v.x, 2.0) + f32::powf(self.v.z, 2.0)),
+            2.0 * (self.v.y * self.v.z + self.v.x * self.w),
+            0.0,
+            2.0 * (self.v.x * self.v.z + self.v.y * self.w),
+            2.0 * (self.v.y * self.v.z - self.v.x * self.w),
+            1.0 - 2.0 * (f32::powf(self.v.x, 2.0) + f32::powf(self.v.y, 2.0)),
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0,
+        ])
+        .transpose()
     }
     /// Get the rotation transform described by this quaternion
     pub fn to_transform(&self) -> Transform {
@@ -116,7 +124,10 @@ impl Add for Quaternion {
     type Output = Quaternion;
     /// Add two quaternions
     fn add(self, rhs: Quaternion) -> Quaternion {
-        Quaternion { v: self.v + rhs.v, w: self.w + rhs.w }
+        Quaternion {
+            v: self.v + rhs.v,
+            w: self.w + rhs.w,
+        }
     }
 }
 
@@ -124,7 +135,10 @@ impl Sub for Quaternion {
     type Output = Quaternion;
     /// Subtract two quaternions
     fn sub(self, rhs: Quaternion) -> Quaternion {
-        Quaternion { v: self.v - rhs.v, w: self.w - rhs.w }
+        Quaternion {
+            v: self.v - rhs.v,
+            w: self.w - rhs.w,
+        }
     }
 }
 
@@ -132,7 +146,10 @@ impl Mul<f32> for Quaternion {
     type Output = Quaternion;
     /// Multiply the quaternion by a scalar
     fn mul(self, rhs: f32) -> Quaternion {
-        Quaternion { v: self.v * rhs, w: self.w * rhs }
+        Quaternion {
+            v: self.v * rhs,
+            w: self.w * rhs,
+        }
     }
 }
 
@@ -140,7 +157,10 @@ impl Mul<Quaternion> for f32 {
     type Output = Quaternion;
     /// Multiply the quaternion by a scalar
     fn mul(self, rhs: Quaternion) -> Quaternion {
-        Quaternion { v: self * rhs.v, w: self * rhs.w }
+        Quaternion {
+            v: self * rhs.v,
+            w: self * rhs.w,
+        }
     }
 }
 
@@ -148,7 +168,10 @@ impl Div<f32> for Quaternion {
     type Output = Quaternion;
     /// Divide the quaternion by a scalar
     fn div(self, rhs: f32) -> Quaternion {
-        Quaternion { v: self.v / rhs, w: self. w / rhs }
+        Quaternion {
+            v: self.v / rhs,
+            w: self.w / rhs,
+        }
     }
 }
 
@@ -156,7 +179,9 @@ impl Neg for Quaternion {
     type Output = Quaternion;
     /// Negate the quaternion
     fn neg(self) -> Quaternion {
-        Quaternion { v: -self.v, w: -self. w }
+        Quaternion {
+            v: -self.v,
+            w: -self.w,
+        }
     }
 }
-

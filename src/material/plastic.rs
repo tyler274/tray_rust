@@ -26,38 +26,40 @@ use std::sync::Arc;
 
 use light_arena::Allocator;
 
-use geometry::Intersection;
-use bxdf::{BxDF, BSDF, TorranceSparrow, Lambertian};
-use bxdf::microfacet::Beckmann;
 use bxdf::fresnel::Dielectric;
+use bxdf::microfacet::Beckmann;
+use bxdf::{BxDF, Lambertian, TorranceSparrow, BSDF};
+use geometry::Intersection;
 use material::Material;
 use texture::Texture;
 
 /// The Plastic material describes plastic materials of varying roughness
 pub struct Plastic {
-    diffuse: Arc<Texture + Send + Sync>,
-    gloss: Arc<Texture + Send + Sync>,
-    roughness: Arc<Texture + Send + Sync>,
+    diffuse: Arc<dyn Texture + Send + Sync>,
+    gloss: Arc<dyn Texture + Send + Sync>,
+    roughness: Arc<dyn Texture + Send + Sync>,
 }
 
 impl Plastic {
     /// Create a new plastic material specifying the diffuse and glossy colors
     /// along with the roughness of the surface
-    pub fn new(diffuse: Arc<Texture + Send + Sync>,
-               gloss: Arc<Texture + Send + Sync>,
-               roughness: Arc<Texture + Send + Sync>) -> Plastic
-    {
+    pub fn new(
+        diffuse: Arc<dyn Texture + Send + Sync>,
+        gloss: Arc<dyn Texture + Send + Sync>,
+        roughness: Arc<dyn Texture + Send + Sync>,
+    ) -> Plastic {
         Plastic {
             diffuse: diffuse.clone(),
             gloss: gloss.clone(),
-            roughness: roughness.clone()
+            roughness: roughness.clone(),
         }
     }
 }
 
 impl Material for Plastic {
-    fn bsdf<'a, 'b, 'c>(&self, hit: &Intersection<'a, 'b>,
-                        alloc: &'c Allocator) -> BSDF<'c> where 'a: 'c
+    fn bsdf<'a, 'b, 'c>(&self, hit: &Intersection<'a, 'b>, alloc: &'c Allocator) -> BSDF<'c>
+    where
+        'a: 'c,
     {
         let diffuse = self.diffuse.sample_color(hit.dg.u, hit.dg.v, hit.dg.time);
         let gloss = self.gloss.sample_color(hit.dg.u, hit.dg.v, hit.dg.time);
@@ -72,7 +74,7 @@ impl Material for Plastic {
         if !gloss.is_black() {
             num_bxdfs += 1;
         }
-        let bxdfs = alloc.alloc_slice::<&BxDF>(num_bxdfs);
+        let bxdfs = alloc.alloc_slice::<&dyn BxDF>(num_bxdfs);
 
         let mut i = 0;
         if !diffuse.is_black() {
@@ -87,4 +89,3 @@ impl Material for Plastic {
         BSDF::new(bxdfs, 1.0, &hit.dg)
     }
 }
-

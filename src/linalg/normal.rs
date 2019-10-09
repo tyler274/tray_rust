@@ -1,5 +1,5 @@
 use std::f32;
-use std::ops::{Add, Sub, Mul, Div, Neg, Index, IndexMut};
+use std::ops::{Add, Div, Index, IndexMut, Mul, Neg, Sub};
 
 use linalg::{self, Vector};
 
@@ -32,11 +32,19 @@ impl Normal {
     /// Get a normalized copy of this normal
     pub fn normalized(&self) -> Normal {
         let len = self.length();
-        Normal { x: self.x / len, y: self.y / len, z: self.z / len }
+        Normal {
+            x: self.x / len,
+            y: self.y / len,
+            z: self.z / len,
+        }
     }
     /// Return a normal facing along the same direction as v
     pub fn face_forward(&self, v: &Vector) -> Normal {
-        if linalg::dot(self, v) < 0f32 { -*self } else { *self }
+        if linalg::dot(self, v) < 0f32 {
+            -*self
+        } else {
+            *self
+        }
     }
 }
 
@@ -44,7 +52,11 @@ impl Add for Normal {
     type Output = Normal;
     /// Add two normals together
     fn add(self, rhs: Normal) -> Normal {
-        Normal { x: self.x + rhs.x, y: self.y + rhs.y, z: self.z + rhs.z }
+        Normal {
+            x: self.x + rhs.x,
+            y: self.y + rhs.y,
+            z: self.z + rhs.z,
+        }
     }
 }
 
@@ -52,7 +64,11 @@ impl Sub for Normal {
     type Output = Normal;
     /// Subtract two normals
     fn sub(self, rhs: Normal) -> Normal {
-        Normal { x: self.x - rhs.x, y: self.y - rhs.y, z: self.z - rhs.z }
+        Normal {
+            x: self.x - rhs.x,
+            y: self.y - rhs.y,
+            z: self.z - rhs.z,
+        }
     }
 }
 
@@ -60,7 +76,11 @@ impl Mul for Normal {
     type Output = Normal;
     /// Multiply two normals
     fn mul(self, rhs: Normal) -> Normal {
-        Normal { x: self.x * rhs.x, y: self.y * rhs.y, z: self.z * rhs.z }
+        Normal {
+            x: self.x * rhs.x,
+            y: self.y * rhs.y,
+            z: self.z * rhs.z,
+        }
     }
 }
 
@@ -68,7 +88,11 @@ impl Mul<f32> for Normal {
     type Output = Normal;
     /// Scale the normal by some value
     fn mul(self, rhs: f32) -> Normal {
-        Normal { x: self.x * rhs, y: self.y * rhs, z: self.z * rhs }
+        Normal {
+            x: self.x * rhs,
+            y: self.y * rhs,
+            z: self.z * rhs,
+        }
     }
 }
 
@@ -76,7 +100,11 @@ impl Mul<Normal> for f32 {
     type Output = Normal;
     /// Scale the normal by some value
     fn mul(self, rhs: Normal) -> Normal {
-        Normal { x: self * rhs.x, y: self * rhs.y, z: self * rhs.z }
+        Normal {
+            x: self * rhs.x,
+            y: self * rhs.y,
+            z: self * rhs.z,
+        }
     }
 }
 
@@ -84,7 +112,11 @@ impl Div for Normal {
     type Output = Normal;
     /// Divide the normals components by the right hand side's components
     fn div(self, rhs: Normal) -> Normal {
-        Normal { x: self.x / rhs.x, y: self.y / rhs.y, z: self.z / rhs.z }
+        Normal {
+            x: self.x / rhs.x,
+            y: self.y / rhs.y,
+            z: self.z / rhs.z,
+        }
     }
 }
 
@@ -92,7 +124,11 @@ impl Div<f32> for Normal {
     type Output = Normal;
     /// Divide the normals components by scalar
     fn div(self, rhs: f32) -> Normal {
-        Normal { x: self.x / rhs, y: self.y / rhs, z: self.z / rhs }
+        Normal {
+            x: self.x / rhs,
+            y: self.y / rhs,
+            z: self.z / rhs,
+        }
     }
 }
 
@@ -100,7 +136,11 @@ impl Neg for Normal {
     type Output = Normal;
     /// Negate the normal
     fn neg(self) -> Normal {
-        Normal { x: -self.x, y: -self.y, z: -self.z }
+        Normal {
+            x: -self.x,
+            y: -self.y,
+            z: -self.z,
+        }
     }
 }
 
@@ -144,4 +184,3 @@ fn test_face_fwd() {
     let n_fwd = n.face_forward(&v);
     assert!(n_fwd == Normal::new(-1f32, 0f32, 0f32));
 }
-

@@ -15,11 +15,10 @@
 //!     "inner_radius": 1.0
 //! }
 /// ```
-
 use std::f32;
 
-use geometry::{Geometry, DifferentialGeometry, Boundable, BBox, Sampleable};
-use linalg::{self, Normal, Vector, Ray, Point};
+use geometry::{BBox, Boundable, DifferentialGeometry, Geometry, Sampleable};
+use linalg::{self, Normal, Point, Ray, Vector};
 use mc;
 
 /// A disk with some inner and outer radius allowing it to
@@ -34,7 +33,10 @@ pub struct Disk {
 impl Disk {
     /// Create a new disk with some inner and outer radius
     pub fn new(radius: f32, inner_radius: f32) -> Disk {
-        Disk { radius: radius, inner_radius: inner_radius }
+        Disk {
+            radius: radius,
+            inner_radius: inner_radius,
+        }
     }
 }
 
@@ -54,7 +56,8 @@ impl Geometry for Disk {
         // We've hit the plane so now see if that hit is on the disk
         let p = ray.at(t);
         let dist_sqr = p.x * p.x + p.y * p.y;
-        if dist_sqr > self.radius * self.radius || dist_sqr < self.inner_radius * self.inner_radius {
+        if dist_sqr > self.radius * self.radius || dist_sqr < self.inner_radius * self.inner_radius
+        {
             return None;
         }
         let mut phi = f32::atan2(p.y, p.x);
@@ -68,16 +71,31 @@ impl Geometry for Disk {
         let hit_radius = f32::sqrt(dist_sqr);
         let u = phi / (2.0 * f32::consts::PI);
         let v = 1.0 - (hit_radius - self.inner_radius) / (self.radius - self.inner_radius);
-        let dp_du = Vector::new(-f32::consts::PI * 2.0 * p.y, f32::consts::PI * 2.0 * p.x, 0.0);
+        let dp_du = Vector::new(
+            -f32::consts::PI * 2.0 * p.y,
+            f32::consts::PI * 2.0 * p.x,
+            0.0,
+        );
         let dp_dv = ((self.inner_radius - self.radius) / hit_radius) * Vector::new(p.x, p.y, 0.0);
-        Some(DifferentialGeometry::new(&p, &Normal::new(0.0, 0.0, 1.0),
-                                       u, v, ray.time, &dp_du, &dp_dv, self))
+        Some(DifferentialGeometry::new(
+            &p,
+            &Normal::new(0.0, 0.0, 1.0),
+            u,
+            v,
+            ray.time,
+            &dp_du,
+            &dp_dv,
+            self,
+        ))
     }
 }
 
 impl Boundable for Disk {
     fn bounds(&self, _: f32, _: f32) -> BBox {
-        BBox::span(Point::new(-self.radius, -self.radius, -0.1), Point::new(self.radius, self.radius, 0.1))
+        BBox::span(
+            Point::new(-self.radius, -self.radius, -0.1),
+            Point::new(self.radius, self.radius, 0.1),
+        )
     }
 }
 
@@ -103,10 +121,13 @@ impl Sampleable for Disk {
                 let w = -*w_i;
                 let pdf = p.distance_sqr(&ray.at(ray.max_t))
                     / (f32::abs(linalg::dot(&d.n, &w)) * self.surface_area());
-                if f32::is_finite(pdf) { pdf } else { 0.0 }
-            },
-            None => 0.0
+                if f32::is_finite(pdf) {
+                    pdf
+                } else {
+                    0.0
+                }
+            }
+            None => 0.0,
         }
     }
 }
-

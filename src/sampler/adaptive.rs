@@ -4,12 +4,14 @@
 //! same as those from the Low Discrepancy sampler but the
 //! number of samples taken per pixel will vary.
 
-use std::{u32, f32, iter};
-use rand::{Rng, StdRng};
-use rand::distributions::{IndependentSample, Range};
+// use rand::distributions::{IndependentSample, Range};
+use rand::distributions::{Distribution, Uniform};
+use rand::rngs::ThreadRng;
+use rand::seq::SliceRandom;
+use std::{f32, iter, u32};
 
-use sampler::{Sampler, Region, ld};
 use film::ImageSample;
+use sampler::{ld, Region, Sampler};
 
 /// Adaptive sampler that makes use of the (0, 2) sequence to generate
 /// well distributed samples and takes `min_spp` to `max_spp` samples per pixel
@@ -26,7 +28,7 @@ pub struct Adaptive {
     /// The cumulative moving average of the luminance for the
     /// number of samples taken so far
     avg_luminance: f32,
-    scramble_range: Range<u32>,
+    scramble_range: Uniform<u32>,
 }
 
 impl Adaptive {
@@ -43,9 +45,15 @@ impl Adaptive {
             println!("rounding max_spp up to {}", max_spp);
         }
         let step_size = ((max_spp - min_spp) / 5).next_power_of_two();
-        Adaptive { region: Region::new((0, 0), dim), min_spp: min_spp, max_spp: max_spp,
-                   step_size: step_size, samples_taken: 0, avg_luminance: 0.0,
-                   scramble_range: Range::new(0, u32::MAX) }
+        Adaptive {
+            region: Region::new((0, 0), dim),
+            min_spp: min_spp,
+            max_spp: max_spp,
+            step_size: step_size,
+            samples_taken: 0,
+            avg_luminance: 0.0,
+            scramble_range: Uniform::new(0, u32::MAX),
+        }
     }
     /// Determine if more samples need to be taken for the pixel currently sampled with the
     /// set of samples passed. This is done by simply looking at the contrast difference
@@ -55,12 +63,15 @@ impl Adaptive {
         let max_contrast = 0.5;
         // First sampling pass, compute the initial average luminance
         if self.samples_taken == self.min_spp {
-            self.avg_luminance = samples.iter().fold(0.0, |ac, s| ac + s.color.luminance())
-                / samples.len() as f32;
+            self.avg_luminance =
+                samples.iter().fold(0.0, |ac, s| ac + s.color.luminance()) / samples.len() as f32;
         } else {
             // Otherwise update the average luminance to include these samples
             let prev_samples = samples.len() - self.step_size;
-            self.avg_luminance = samples.iter().enumerate().skip(prev_samples)
+            self.avg_luminance = samples
+                .iter()
+                .enumerate()
+                .skip(prev_samples)
                 .fold(self.avg_luminance, |ac, (i, s)| {
                     (s.color.luminance() + (i - 1) as f32 * ac) / i as f32
                 });
@@ -70,7 +81,9 @@ impl Adaptive {
         // we look at the first min_spp samples again, but we've already computed their average
         // luminance! We should keep a moving average
         for s in samples.iter() {
-            if f32::abs(s.color.luminance() - self.avg_luminance) / self.avg_luminance > max_contrast {
+            if f32::abs(s.color.luminance() - self.avg_luminance) / self.avg_luminance
+                > max_contrast
+            {
                 return true;
             }
         }
@@ -79,7 +92,7 @@ impl Adaptive {
 }
 
 impl Sampler for Adaptive {
-    fn get_samples(&mut self, samples: &mut Vec<(f32, f32)>, rng: &mut StdRng) {
+    fn get_samples(&mut self, samples: &mut Vec<(f32, f32)>, rng: &mut ThreadRng) {
         samples.clear();
         if !self.has_samples() {
             return;
@@ -104,20 +117,28 @@ impl Sampler for Adaptive {
             s.1 += self.region.current.1 as f32;
         }
     }
-    fn get_samples_2d(&mut self, samples: &mut [(f32, f32)], rng: &mut StdRng) {
-        let scramble = (self.scramble_range.ind_sample(rng),
-                        self.scramble_range.ind_sample(rng));
+    fn get_samples_2d(&mut self, samples: &mut [(f32, f32)], rng: &mut ThreadRng) {
+        let scramble = (
+            self.scramble_range.sample(rng),
+            self.scramble_range.sample(rng),
+        );
         ld::sample_2d(samples, scramble, self.samples_taken as u32);
-        rng.shuffle(samples);
+        samples.shuffle(rng);
     }
-    fn get_samples_1d(&mut self, samples: &mut [f32], rng: &mut StdRng) {
-        let scramble = self.scramble_range.ind_sample(rng);
+    fn get_samples_1d(&mut self, samples: &mut [f32], rng: &mut ThreadRng) {
+        let scramble = self.scramble_range.sample(rng);
         ld::sample_1d(samples, scramble, self.samples_taken as u32);
-        rng.shuffle(samples);
+        samples.shuffle(rng);
     }
-    fn max_spp(&self) -> usize { self.max_spp }
-    fn has_samples(&self) -> bool { self.region.current.1 != self.region.end.1 }
-    fn dimensions(&self) -> (u32, u32) { self.region.dim }
+    fn max_spp(&self) -> usize {
+        self.max_spp
+    }
+    fn has_samples(&self) -> bool {
+        self.region.current.1 != self.region.end.1
+    }
+    fn dimensions(&self) -> (u32, u32) {
+        self.region.dim
+    }
     fn select_block(&mut self, start: (u32, u32)) {
         self.region.select_region(start);
     }
@@ -140,4 +161,3 @@ impl Sampler for Adaptive {
         }
     }
 }
-

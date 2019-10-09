@@ -15,17 +15,18 @@
 //! }
 //! ```
 
-use std::f32;
-use rand::{StdRng, Rng};
 use light_arena::Allocator;
+use rand::rngs::ThreadRng;
+use rand::Rng;
+use std::f32;
 
-use scene::Scene;
-use linalg::{self, Ray};
-use geometry::{Intersection, Emitter, Instance};
-use film::Colorf;
-use integrator::Integrator;
 use bxdf::BxDFType;
-use sampler::{Sampler, Sample};
+use film::Colorf;
+use geometry::{Emitter, Instance, Intersection};
+use integrator::Integrator;
+use linalg::{self, Ray};
+use sampler::{Sample, Sampler};
+use scene::Scene;
 
 /// The path integrator implementing Path tracing with explicit light sampling
 #[derive(Clone, Copy, Debug)]
@@ -37,14 +38,24 @@ pub struct Path {
 impl Path {
     /// Create a new path integrator with the min and max length desired for paths
     pub fn new(min_depth: u32, max_depth: u32) -> Path {
-        Path { min_depth: min_depth as usize, max_depth: max_depth as usize }
+        Path {
+            min_depth: min_depth as usize,
+            max_depth: max_depth as usize,
+        }
     }
 }
 
 impl Integrator for Path {
-    fn illumination(&self, scene: &Scene, light_list: &[&Emitter], r: &Ray,
-                    hit: &Intersection, sampler: &mut Sampler, rng: &mut StdRng,
-                    alloc: &Allocator) -> Colorf {
+    fn illumination(
+        &self,
+        scene: &Scene,
+        light_list: &[&Emitter],
+        r: &Ray,
+        hit: &Intersection,
+        sampler: &mut dyn Sampler,
+        rng: &mut ThreadRng,
+        alloc: &Allocator,
+    ) -> Colorf {
         let num_samples = self.max_depth as usize + 1;
         let l_samples = alloc.alloc_slice::<(f32, f32)>(num_samples);
         let l_samples_comp = alloc.alloc_slice::<f32>(num_samples);
@@ -70,15 +81,24 @@ impl Integrator for Path {
             if bounce == 0 || specular_bounce {
                 if let Instance::Emitter(ref e) = *current_hit.instance {
                     let w = -ray.d;
-                    illum = illum + path_throughput * e.radiance(&w, &hit.dg.p, &hit.dg.ng, ray.time);
+                    illum =
+                        illum + path_throughput * e.radiance(&w, &hit.dg.p, &hit.dg.ng, ray.time);
                 }
             }
             let bsdf = current_hit.material.bsdf(&current_hit, alloc);
             let w_o = -ray.d;
             let light_sample = Sample::new(&l_samples[bounce], l_samples_comp[bounce]);
             let bsdf_sample = Sample::new(&bsdf_samples[bounce], bsdf_samples_comp[bounce]);
-            let li = self.sample_one_light(scene, light_list, &w_o, &current_hit.dg.p, &bsdf,
-                                           &light_sample, &bsdf_sample, ray.time);
+            let li = self.sample_one_light(
+                scene,
+                light_list,
+                &w_o,
+                &current_hit.dg.p,
+                &bsdf,
+                &light_sample,
+                &bsdf_sample,
+                ray.time,
+            );
             illum = illum + path_throughput * li;
 
             // Determine the next direction to take the path by sampling the BSDF
@@ -96,7 +116,9 @@ impl Integrator for Path {
             // nice, eg. damping light in transparent objects and such.
             if bounce > self.min_depth {
                 let cont_prob = f32::max(0.5, path_throughput.luminance());
-                if rng.next_f32() > cont_prob {
+                // if rng.next_f32() > cont_prob {
+                let gen: f32 = rng.gen();
+                if gen > cont_prob {
                     break;
                 }
                 // Re-weight the sum terms accordingly with the Russian roulette weight
@@ -118,4 +140,3 @@ impl Integrator for Path {
         illum
     }
 }
-

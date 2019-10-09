@@ -1,11 +1,14 @@
 //! Provides a high quality sampling scheme based on (0, 2)-sequences
 //! See sec. 7.4.3 of Physically Based Rendering
 
-use std::{u32, f32, iter};
-use rand::{Rng, StdRng};
-use rand::distributions::{IndependentSample, Range};
+// use rand::distributions::{IndependentSample, Range};
+use rand::distributions::{Distribution, Uniform};
+use rand::rngs::ThreadRng;
+use rand::seq::SliceRandom;
+// use rand::Rng;
+use std::{f32, iter, u32};
 
-use sampler::{Sampler, Region};
+use sampler::{Region, Sampler};
 
 /// Low discrepancy sampler that makes use of the (0, 2) sequence to generate
 /// well distributed samples
@@ -13,7 +16,7 @@ pub struct LowDiscrepancy {
     region: Region,
     /// Number of samples to take per pixel
     spp: usize,
-    scramble_range: Range<u32>,
+    scramble_range: Uniform<u32>,
 }
 
 impl LowDiscrepancy {
@@ -24,13 +27,16 @@ impl LowDiscrepancy {
             print!("Warning: LowDiscrepancy sampler requires power of two samples per pixel, ");
             println!("rounding up to {}", spp);
         }
-        LowDiscrepancy { region: Region::new((0, 0), dim), spp: spp,
-                         scramble_range: Range::new(0, u32::MAX) }
+        LowDiscrepancy {
+            region: Region::new((0, 0), dim),
+            spp: spp,
+            scramble_range: Uniform::new(0, u32::MAX),
+        }
     }
 }
 
 impl Sampler for LowDiscrepancy {
-    fn get_samples(&mut self, samples: &mut Vec<(f32, f32)>, rng: &mut StdRng) {
+    fn get_samples(&mut self, samples: &mut Vec<(f32, f32)>, rng: &mut ThreadRng) {
         samples.clear();
         if !self.has_samples() {
             return;
@@ -51,20 +57,28 @@ impl Sampler for LowDiscrepancy {
             self.region.current.1 += 1;
         }
     }
-    fn get_samples_2d(&mut self, samples: &mut [(f32, f32)], rng: &mut StdRng) {
-        let scramble = (self.scramble_range.ind_sample(rng),
-                        self.scramble_range.ind_sample(rng));
+    fn get_samples_2d(&mut self, samples: &mut [(f32, f32)], rng: &mut ThreadRng) {
+        let scramble = (
+            self.scramble_range.sample(rng),
+            self.scramble_range.sample(rng),
+        );
         sample_2d(samples, scramble, 0);
-        rng.shuffle(samples);
+        samples.shuffle(rng);
     }
-    fn get_samples_1d(&mut self, samples: &mut [f32], rng: &mut StdRng) {
-        let scramble = self.scramble_range.ind_sample(rng);
+    fn get_samples_1d(&mut self, samples: &mut [f32], rng: &mut ThreadRng) {
+        let scramble = self.scramble_range.sample(rng);
         sample_1d(samples, scramble, 0);
-        rng.shuffle(samples);
+        samples.shuffle(rng)
     }
-    fn max_spp(&self) -> usize { self.spp }
-    fn has_samples(&self) -> bool { self.region.current.1 != self.region.end.1 }
-    fn dimensions(&self) -> (u32, u32) { self.region.dim }
+    fn max_spp(&self) -> usize {
+        self.spp
+    }
+    fn has_samples(&self) -> bool {
+        self.region.current.1 != self.region.end.1
+    }
+    fn dimensions(&self) -> (u32, u32) {
+        self.region.dim
+    }
     fn select_block(&mut self, start: (u32, u32)) {
         self.region.select_region(start);
     }
@@ -95,13 +109,16 @@ pub fn sample_02(n: u32, scramble: (u32, u32)) -> (f32, f32) {
 /// as described by Kollig & Keller (2002) and in PBR
 /// method is specialized for base 2
 pub fn van_der_corput(mut n: u32, scramble: u32) -> f32 {
-	n = (n << 16) | (n >> 16);
-	n = ((n & 0x00ff00ff) << 8) | ((n & 0xff00ff00) >> 8);
-	n = ((n & 0x0f0f0f0f) << 4) | ((n & 0xf0f0f0f0) >> 4);
-	n = ((n & 0x33333333) << 2) | ((n & 0xcccccccc) >> 2);
-	n = ((n & 0x55555555) << 1) | ((n & 0xaaaaaaaa) >> 1);
-	n ^= scramble;
-	f32::min(((n >> 8) & 0xffffff) as f32 / ((1 << 24) as f32), 1.0 - f32::EPSILON)
+    n = (n << 16) | (n >> 16);
+    n = ((n & 0x00ff00ff) << 8) | ((n & 0xff00ff00) >> 8);
+    n = ((n & 0x0f0f0f0f) << 4) | ((n & 0xf0f0f0f0) >> 4);
+    n = ((n & 0x33333333) << 2) | ((n & 0xcccccccc) >> 2);
+    n = ((n & 0x55555555) << 1) | ((n & 0xaaaaaaaa) >> 1);
+    n ^= scramble;
+    f32::min(
+        ((n >> 8) & 0xffffff) as f32 / ((1 << 24) as f32),
+        1.0 - f32::EPSILON,
+    )
 }
 /// Generate a scrambled Sobol' sequence value
 /// as described by Kollig & Keller (2002) and in PBR
@@ -115,6 +132,8 @@ pub fn sobol(mut n: u32, mut scramble: u32) -> f32 {
         n >>= 1;
         i ^= i >> 1;
     }
-    f32::min(((scramble >> 8) & 0xffffff) as f32 / ((1 << 24) as f32), 1.0 - f32::EPSILON)
+    f32::min(
+        ((scramble >> 8) & 0xffffff) as f32 / ((1 << 24) as f32),
+        1.0 - f32::EPSILON,
+    )
 }
-

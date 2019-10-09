@@ -1,8 +1,8 @@
 use std::f32;
 use std::ops::Mul;
 
-use linalg::{self, Matrix4, Vector, Point, Normal, Ray};
 use geometry::BBox;
+use linalg::{self, Matrix4, Normal, Point, Ray, Vector};
 
 /// Transform describes an affine transformation in 3D space
 /// and stores both the transformation and its inverse
@@ -22,75 +22,109 @@ impl Transform {
     }
     /// Construct a transform from an existing matrix
     pub fn from_mat(mat: &Matrix4) -> Transform {
-        Transform { mat: *mat, inv: mat.inverse() }
+        Transform {
+            mat: *mat,
+            inv: mat.inverse(),
+        }
     }
     /// Construct a transform from an existing matrix/inverse pair
     pub fn from_pair(mat: &Matrix4, inv: &Matrix4) -> Transform {
-        Transform { mat: *mat, inv: *inv }
+        Transform {
+            mat: *mat,
+            inv: *inv,
+        }
     }
+    #[rustfmt::skip]
     /// Construct a transformation matrix to translate by the vector
     pub fn translate(v: &Vector) -> Transform {
         Transform {
-            mat: Matrix4::new([1.0, 0.0, 0.0, v.x,
-                               0.0, 1.0, 0.0, v.y,
-                               0.0, 0.0, 1.0, v.z,
-                               0.0, 0.0, 0.0, 1.0]),
-            inv: Matrix4::new([1.0, 0.0, 0.0, -v.x,
-                               0.0, 1.0, 0.0, -v.y,
-                               0.0, 0.0, 1.0, -v.z,
-                               0.0, 0.0, 0.0, 1.0]),
+            mat: Matrix4::new([
+                1.0, 0.0, 0.0, v.x, 
+                0.0, 1.0, 0.0, v.y, 
+                0.0, 0.0, 1.0, v.z, 
+                0.0, 0.0, 0.0, 1.0,
+            ]),
+            inv: Matrix4::new([
+                1.0, 0.0, 0.0, -v.x, 
+                0.0, 1.0, 0.0, -v.y, 
+                0.0, 0.0, 1.0, -v.z, 
+                0.0, 0.0, 0.0, 1.0,
+            ]),
         }
     }
+    #[rustfmt::skip]
     /// Construct a transform to scale x, y and z by the values in the vector
     pub fn scale(v: &Vector) -> Transform {
         Transform {
-            mat: Matrix4::new([v.x, 0.0, 0.0, 0.0,
-                               0.0, v.y, 0.0, 0.0,
-                               0.0, 0.0, v.z, 0.0,
-                               0.0, 0.0, 0.0, 1.0]),
-            inv: Matrix4::new([1.0 / v.x, 0.0, 0.0, 0.0,
-                               0.0, 1.0 / v.y, 0.0, 0.0,
-                               0.0, 0.0, 1.0 / v.z, 0.0,
-                               0.0, 0.0, 0.0, 1.0]),
+            mat: Matrix4::new([
+                v.x, 0.0, 0.0, 0.0, 
+                0.0, v.y, 0.0, 0.0, 
+                0.0, 0.0, v.z, 0.0, 
+                0.0, 0.0, 0.0, 1.0,
+            ]),
+            inv: Matrix4::new([
+                1.0 / v.x, 0.0, 0.0, 0.0,
+                0.0, 1.0 / v.y, 0.0, 0.0,
+                0.0, 0.0, 1.0 / v.z, 0.0,
+                0.0, 0.0, 0.0, 1.0,
+            ]),
         }
     }
+    #[rustfmt::skip]
     /// Construct a transform to rotate `deg` degrees about the x axis
     pub fn rotate_x(deg: f32) -> Transform {
-        let r = linalg::to_radians(deg);
+        let r = deg.to_radians();
         let s = f32::sin(r);
         let c = f32::cos(r);
-        let m = Matrix4::new([1.0, 0.0, 0.0, 0.0,
-                              0.0, c, -s, 0.0,
-                              0.0, s, c, 0.0,
-                              0.0, 0.0, 0.0, 1.0]);
-        Transform { mat: m, inv: m.transpose() }
+        let m = Matrix4::new([
+            1.0, 0.0, 0.0, 0.0, 
+            0.0, c, -s, 0.0, 
+            0.0, s, c, 0.0, 
+            0.0, 0.0, 0.0, 1.0,
+        ]);
+        Transform {
+            mat: m,
+            inv: m.transpose(),
+        }
     }
+    #[rustfmt::skip]
     /// Construct a transform to rotate `deg` degrees about the y axis
     pub fn rotate_y(deg: f32) -> Transform {
-        let r = linalg::to_radians(deg);
+        let r = deg.to_radians();
         let s = f32::sin(r);
         let c = f32::cos(r);
-        let m = Matrix4::new([c, 0.0, s, 0.0,
-                              0.0, 1.0, 0.0, 0.0,
-                              -s, 0.0, c, 0.0,
-                              0.0, 0.0, 0.0, 1.0]);
-        Transform { mat: m, inv: m.transpose() }
+        let m = Matrix4::new([
+            c, 0.0, s, 0.0, 
+            0.0, 1.0, 0.0, 0.0, 
+            -s, 0.0, c, 0.0, 
+            0.0, 0.0, 0.0, 1.0,
+        ]);
+        Transform {
+            mat: m,
+            inv: m.transpose(),
+        }
     }
+    #[rustfmt::skip]
     /// Construct a transform to rotate `deg` degrees about the z axis
     pub fn rotate_z(deg: f32) -> Transform {
-        let r = linalg::to_radians(deg);
+        let r = deg.to_radians();
         let s = f32::sin(r);
         let c = f32::cos(r);
-        let m = Matrix4::new([c, -s, 0.0, 0.0,
-                              s, c, 0.0, 0.0,
-                              0.0, 0.0, 1.0, 0.0,
-                              0.0, 0.0, 0.0, 1.0]);
-        Transform { mat: m, inv: m.transpose() }
+        let m = Matrix4::new([
+            c, -s, 0.0, 0.0, 
+            s, c, 0.0, 0.0, 
+            0.0, 0.0, 1.0, 0.0, 
+            0.0, 0.0, 0.0, 1.0,
+        ]);
+        Transform {
+            mat: m,
+            inv: m.transpose(),
+        }
     }
     /// Construct a transform to rotate about `axis` by `deg` degrees
     pub fn rotate(axis: &Vector, deg: f32) -> Transform {
         let a = axis.normalized();
-        let r = linalg::to_radians(deg);
+        let r = deg.to_radians();
         let s = f32::sin(r);
         let c = f32::cos(r);
         let mut m = Matrix4::identity();
@@ -105,7 +139,10 @@ impl Transform {
         *m.at_mut(2, 0) = a.x * a.z * (1.0 - c) - a.y * s;
         *m.at_mut(2, 1) = a.y * a.z * (1.0 - c) + a.x * s;
         *m.at_mut(2, 2) = a.z * a.z + (1.0 - a.z * a.z) * c;
-        Transform { mat: m, inv: m.transpose() }
+        Transform {
+            mat: m,
+            inv: m.transpose(),
+        }
     }
     /// Construct the look at transform for a camera at `pos` looking at
     /// the point `center` oriented with up vector `up`
@@ -120,22 +157,28 @@ impl Transform {
             *m.at_mut(i, 2) = dir[i];
             *m.at_mut(i, 3) = pos[i];
         }
-        Transform { mat: m, inv: m.inverse() }
+        Transform {
+            mat: m,
+            inv: m.inverse(),
+        }
     }
     /// Construct a perspective transformation
     pub fn perspective(fovy: f32, near: f32, far: f32) -> Transform {
+        #[rustfmt::skip]
         let proj_div = Matrix4::new(
             [1.0, 0.0, 0.0, 0.0,
              0.0, 1.0, 0.0, 0.0,
              0.0, 0.0, far / (far - near), -far * near / (far - near),
              0.0, 0.0, 1.0, 0.0]);
-        let inv_tan = 1.0 / f32::tan(linalg::to_radians(fovy) / 2.0);
-        Transform::scale(&Vector::new(inv_tan, inv_tan, 1.0))
-            * Transform::from_mat(&proj_div)
+        let inv_tan = 1.0 / f32::tan(fovy.to_radians() / 2.0);
+        Transform::scale(&Vector::new(inv_tan, inv_tan, 1.0)) * Transform::from_mat(&proj_div)
     }
     /// Return the inverse of the transformation
     pub fn inverse(&self) -> Transform {
-        Transform { mat: self.inv, inv: self.mat }
+        Transform {
+            mat: self.inv,
+            inv: self.mat,
+        }
     }
     /// Returns true if the transform has applies a scaling
     pub fn has_scale(&self) -> bool {
@@ -150,11 +193,15 @@ impl Transform {
     pub fn inv_mul_point(&self, p: &Point) -> Point {
         let mut res = Point::broadcast(0.0);
         for i in 0..3 {
-            res[i] = *self.inv.at(i, 0) * p.x + *self.inv.at(i, 1) * p.y
-                + *self.inv.at(i, 2) * p.z + *self.inv.at(i, 3);
+            res[i] = *self.inv.at(i, 0) * p.x
+                + *self.inv.at(i, 1) * p.y
+                + *self.inv.at(i, 2) * p.z
+                + *self.inv.at(i, 3);
         }
-        let w = *self.inv.at(3, 0) * p.x + *self.inv.at(3, 1) * p.y
-            + *self.inv.at(3, 2) * p.z + *self.inv.at(3, 3);
+        let w = *self.inv.at(3, 0) * p.x
+            + *self.inv.at(3, 1) * p.y
+            + *self.inv.at(3, 2) * p.z
+            + *self.inv.at(3, 3);
         if (w - 1.0).abs() < f32::EPSILON {
             res / w
         } else {
@@ -165,8 +212,7 @@ impl Transform {
     pub fn inv_mul_vector(&self, v: &Vector) -> Vector {
         let mut res = Vector::broadcast(0.0);
         for i in 0..3 {
-            res[i] = *self.inv.at(i, 0) * v.x + *self.inv.at(i, 1) * v.y
-                + *self.inv.at(i, 2) * v.z;
+            res[i] = *self.inv.at(i, 0) * v.x + *self.inv.at(i, 1) * v.y + *self.inv.at(i, 2) * v.z;
         }
         res
     }
@@ -174,8 +220,7 @@ impl Transform {
     pub fn inv_mul_normal(&self, n: &Normal) -> Normal {
         let mut res = Normal::broadcast(0.0);
         for i in 0..3 {
-            res[i] = *self.mat.at(0, i) * n.x + *self.mat.at(1, i) * n.y
-                + *self.mat.at(2, i) * n.z;
+            res[i] = *self.mat.at(0, i) * n.x + *self.mat.at(1, i) * n.y + *self.mat.at(2, i) * n.z;
         }
         res
     }
@@ -192,7 +237,10 @@ impl Mul for Transform {
     type Output = Transform;
     /// Compose two transformations
     fn mul(self, rhs: Transform) -> Transform {
-        Transform { mat: self.mat * rhs.mat, inv: rhs.inv * self.inv }
+        Transform {
+            mat: self.mat * rhs.mat,
+            inv: rhs.inv * self.inv,
+        }
     }
 }
 
@@ -203,11 +251,15 @@ impl Mul<Point> for Transform {
     fn mul(self, p: Point) -> Point {
         let mut res = Point::broadcast(0.0);
         for i in 0..3 {
-            res[i] = *self.mat.at(i, 0) * p.x + *self.mat.at(i, 1) * p.y
-                + *self.mat.at(i, 2) * p.z + *self.mat.at(i, 3);
+            res[i] = *self.mat.at(i, 0) * p.x
+                + *self.mat.at(i, 1) * p.y
+                + *self.mat.at(i, 2) * p.z
+                + *self.mat.at(i, 3);
         }
-        let w = *self.mat.at(3, 0) * p.x + *self.mat.at(3, 1) * p.y
-            + *self.mat.at(3, 2) * p.z + *self.mat.at(3, 3);
+        let w = *self.mat.at(3, 0) * p.x
+            + *self.mat.at(3, 1) * p.y
+            + *self.mat.at(3, 2) * p.z
+            + *self.mat.at(3, 3);
         if (w - 1.0).abs() < f32::EPSILON {
             res / w
         } else {
@@ -222,8 +274,7 @@ impl Mul<Vector> for Transform {
     fn mul(self, v: Vector) -> Vector {
         let mut res = Vector::broadcast(0.0);
         for i in 0..3 {
-            res[i] = *self.mat.at(i, 0) * v.x + *self.mat.at(i, 1) * v.y
-                + *self.mat.at(i, 2) * v.z;
+            res[i] = *self.mat.at(i, 0) * v.x + *self.mat.at(i, 1) * v.y + *self.mat.at(i, 2) * v.z;
         }
         res
     }
@@ -235,8 +286,7 @@ impl Mul<Normal> for Transform {
     fn mul(self, n: Normal) -> Normal {
         let mut res = Normal::broadcast(0.0);
         for i in 0..3 {
-            res[i] = *self.inv.at(0, i) * n.x + *self.inv.at(1, i) * n.y
-                + *self.inv.at(2, i) * n.z;
+            res[i] = *self.inv.at(0, i) * n.x + *self.inv.at(1, i) * n.y + *self.inv.at(2, i) * n.z;
         }
         res
     }
@@ -370,11 +420,16 @@ fn test_rotate_z() {
 }
 #[test]
 fn test_rotate() {
-    assert_eq!(Transform::rotate(&Vector::new(1.0, 0.0, 0.0), 32.0),
-                Transform::rotate_x(32.0));
-    assert_eq!(Transform::rotate(&Vector::new(0.0, 1.0, 0.0), 104.0),
-                Transform::rotate_y(104.0));
-    assert_eq!(Transform::rotate(&Vector::new(0.0, 0.0, 1.0), 243.0),
-                Transform::rotate_z(243.0));
+    assert_eq!(
+        Transform::rotate(&Vector::new(1.0, 0.0, 0.0), 32.0),
+        Transform::rotate_x(32.0)
+    );
+    assert_eq!(
+        Transform::rotate(&Vector::new(0.0, 1.0, 0.0), 104.0),
+        Transform::rotate_y(104.0)
+    );
+    assert_eq!(
+        Transform::rotate(&Vector::new(0.0, 0.0, 1.0), 243.0),
+        Transform::rotate_z(243.0)
+    );
 }
-

@@ -1,17 +1,17 @@
 //! The worker module provides the Worker struct which receives instructions from
 //! the master, renders and reports back its results
 
-use std::path::PathBuf;
 use std::io::prelude::*;
-use std::net::{TcpListener, TcpStream};
 use std::iter;
+use std::net::{TcpListener, TcpStream};
+use std::path::PathBuf;
 
-use bincode::{Infinite, serialize, deserialize};
+use bincode::{deserialize, serialize};
 
-use scene::Scene;
-use film::RenderTarget;
+use exec::distrib::{Frame, Instructions};
 use exec::Config;
-use exec::distrib::{Instructions, Frame};
+use film::RenderTarget;
+use scene::Scene;
 
 /// Port that the workers listen for the master on
 pub static PORT: u16 = 63234;
@@ -39,17 +39,27 @@ impl Worker {
         let (scene, rt, spp, mut frame_info) = Scene::load_file(&instructions.scene);
         frame_info.start = instructions.frames.0;
         frame_info.end = instructions.frames.1;
-        let config = Config::new(PathBuf::from("/tmp"), instructions.scene.clone(), spp,
-                                 num_threads, frame_info,
-                                 (instructions.block_start, instructions.block_count));
-        Worker { instructions: instructions, render_target: rt, scene: scene,
-                 config: config, master: master }
+        let config = Config::new(
+            PathBuf::from("/tmp"),
+            instructions.scene.clone(),
+            spp,
+            num_threads,
+            frame_info,
+            (instructions.block_start, instructions.block_count),
+        );
+        Worker {
+            instructions: instructions,
+            render_target: rt,
+            scene: scene,
+            config: config,
+            master: master,
+        }
     }
     /// Send our blocks back to the master
     pub fn send_results(&mut self) {
         let (block_size, blocks, pixels) = self.render_target.get_rendered_blocks();
         let frame = Frame::new(self.config.current_frame, block_size, blocks, pixels);
-        let bytes = serialize(&frame, Infinite).unwrap();
+        let bytes = serialize(&frame).unwrap();
         if let Err(e) = self.master.write_all(&bytes[..]) {
             panic!("Failed to send frame to {:?}: {}", self.master, e);
         }
@@ -84,8 +94,7 @@ fn get_instructions() -> (Instructions, TcpStream) {
             let instr = deserialize(&buf[..]).unwrap();
             println!("Received instructions: {:?}", instr);
             (instr, stream)
-        },
+        }
         Err(e) => panic!("Error accepting: {:?}", e),
     }
 }
-

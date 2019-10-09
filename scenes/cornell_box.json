@@ -7,7 +7,7 @@
 		"start_frame": 0,
 		"end_frame": 0,
 		"scene_time": 0,
-		"filter" : {
+		"filter": {
 			"type": "mitchell_netravali",
 			"width": 2.0,
 			"height": 2.0,
@@ -20,39 +20,63 @@
 		"transform": [
 			{
 				"type": "translate",
-				"translation": [0, 12, -60]
+				"translation": [
+					0,
+					12,
+					-60
+				]
 			}
 		]
 	},
 	"integrator": {
 		"type": "pathtracer",
-		"min_depth": 4,
-		"max_depth": 8
+		"min_depth": 6,
+		"max_depth": 10
 	},
 	"materials": [
 		{
 			"type": "matte",
 			"name": "white_wall",
-			"diffuse": [0.740063, 0.742313, 0.733934],
+			"diffuse": [
+				0.740063,
+				0.742313,
+				0.733934
+			],
 			"roughness": 1.0
 		},
 		{
 			"type": "matte",
 			"name": "red_wall",
-			"diffuse": [0.366046, 0.0371827, 0.0416385],
+			"diffuse": [
+				0.366046,
+				0.0371827,
+				0.0416385
+			],
 			"roughness": 1.0
 		},
 		{
 			"type": "matte",
 			"name": "green_wall",
-			"diffuse": [0.162928, 0.408903, 0.0833759],
+			"diffuse": [
+				0.162928,
+				0.408903,
+				0.0833759
+			],
 			"roughness": 1.0
 		},
 		{
 			"type": "plastic",
 			"name": "white_plastic",
-			"diffuse": [0.8, 0.8, 0.8],
-			"gloss": [0.6, 0.6, 0.6],
+			"diffuse": [
+				0.8,
+				0.8,
+				0.8
+			],
+			"gloss": [
+				0.6,
+				0.6,
+				0.6
+			],
 			"roughness": 0.5
 		}
 	],
@@ -63,7 +87,11 @@
 			"transform": [
 				{
 					"type": "translate",
-					"translation": [0, 12, 0]
+					"translation": [
+						0,
+						12,
+						0
+					]
 				}
 			],
 			"objects": [
@@ -77,11 +105,19 @@
 					"transform": [
 						{
 							"type": "scale",
-							"scaling": [15, 12, 1]
+							"scaling": [
+								15,
+								12,
+								1
+							]
 						},
 						{
 							"type": "translate",
-							"translation": [0, 0, 20]
+							"translation": [
+								0,
+								0,
+								20
+							]
 						}
 					]
 				},
@@ -95,7 +131,11 @@
 					"transform": [
 						{
 							"type": "scale",
-							"scaling": [20, 12, 1]
+							"scaling": [
+								20,
+								12,
+								1
+							]
 						},
 						{
 							"type": "rotate_y",
@@ -103,7 +143,11 @@
 						},
 						{
 							"type": "translate",
-							"translation": [-15.0, 0, 0]
+							"translation": [
+								-15.0,
+								0,
+								0
+							]
 						}
 					]
 				},
@@ -117,7 +161,11 @@
 					"transform": [
 						{
 							"type": "scale",
-							"scaling": [20, 12, 1]
+							"scaling": [
+								20,
+								12,
+								1
+							]
 						},
 						{
 							"type": "rotate_y",
@@ -125,7 +173,11 @@
 						},
 						{
 							"type": "translate",
-							"translation": [15.0, 0, 0]
+							"translation": [
+								15.0,
+								0,
+								0
+							]
 						}
 					]
 				},
@@ -139,7 +191,11 @@
 					"transform": [
 						{
 							"type": "scale",
-							"scaling": [15, 20, 1]
+							"scaling": [
+								15,
+								20,
+								1
+							]
 						},
 						{
 							"type": "rotate_x",
@@ -147,7 +203,11 @@
 						},
 						{
 							"type": "translate",
-							"translation": [0.0, 12, 0]
+							"translation": [
+								0.0,
+								12,
+								0
+							]
 						}
 					]
 				},
@@ -161,7 +221,11 @@
 					"transform": [
 						{
 							"type": "scale",
-							"scaling": [15, 20, 1]
+							"scaling": [
+								15,
+								20,
+								1
+							]
 						},
 						{
 							"type": "rotate_x",
@@ -169,7 +233,11 @@
 						},
 						{
 							"type": "translate",
-							"translation": [0.0, -12, 0]
+							"translation": [
+								0.0,
+								-12,
+								0
+							]
 						}
 					]
 				}
@@ -180,7 +248,12 @@
 			"type": "emitter",
 			"material": "white_wall",
 			"emitter": "area",
-			"emission": [1, 0.772549, 0.560784, 40],
+			"emission": [
+				1,
+				0.772549,
+				0.560784,
+				40
+			],
 			"geometry": {
 				"type": "rectangle",
 				"width": 6,
@@ -193,7 +266,11 @@
 				},
 				{
 					"type": "translate",
-					"translation": [0, 23.8, 0]
+					"translation": [
+						0,
+						23.8,
+						0
+					]
 				}
 			]
 		},
@@ -209,7 +286,11 @@
 			"transform": [
 				{
 					"type": "scale",
-					"scaling": [4, 10, 4]
+					"scaling": [
+						4,
+						10,
+						4
+					]
 				},
 				{
 					"type": "rotate_y",
@@ -217,7 +298,11 @@
 				},
 				{
 					"type": "translate",
-					"translation": [-6, 5, 6]
+					"translation": [
+						-6,
+						5,
+						6
+					]
 				}
 			]
 		},
@@ -233,7 +318,11 @@
 			"transform": [
 				{
 					"type": "scale",
-					"scaling": [4, 5, 4]
+					"scaling": [
+						4,
+						5,
+						4
+					]
 				},
 				{
 					"type": "rotate_y",
@@ -241,10 +330,13 @@
 				},
 				{
 					"type": "translate",
-					"translation": [4, 2.5, -3.0]
+					"translation": [
+						4,
+						2.5,
+						-3.0
+					]
 				}
 			]
 		}
 	]
 }
-

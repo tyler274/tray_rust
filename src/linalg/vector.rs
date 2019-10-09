@@ -1,5 +1,5 @@
 use std::f32;
-use std::ops::{Add, Sub, Mul, Div, Neg, Index, IndexMut};
+use std::ops::{Add, Div, Index, IndexMut, Mul, Neg, Sub};
 
 use linalg::Point;
 
@@ -31,7 +31,11 @@ impl Vector {
     /// Get a normalized copy of this vector
     pub fn normalized(&self) -> Vector {
         let len = self.length();
-        Vector { x: self.x / len, y: self.y / len, z: self.z / len }
+        Vector {
+            x: self.x / len,
+            y: self.y / len,
+            z: self.z / len,
+        }
     }
 }
 
@@ -39,7 +43,11 @@ impl Add for Vector {
     type Output = Vector;
     /// Add two vectors together
     fn add(self, rhs: Vector) -> Vector {
-        Vector { x: self.x + rhs.x, y: self.y + rhs.y, z: self.z + rhs.z }
+        Vector {
+            x: self.x + rhs.x,
+            y: self.y + rhs.y,
+            z: self.z + rhs.z,
+        }
     }
 }
 
@@ -47,7 +55,11 @@ impl Sub for Vector {
     type Output = Vector;
     /// Subtract two vectors
     fn sub(self, rhs: Vector) -> Vector {
-        Vector { x: self.x - rhs.x, y: self.y - rhs.y, z: self.z - rhs.z }
+        Vector {
+            x: self.x - rhs.x,
+            y: self.y - rhs.y,
+            z: self.z - rhs.z,
+        }
     }
 }
 
@@ -55,7 +67,11 @@ impl Mul for Vector {
     type Output = Vector;
     /// Multiply two vectors
     fn mul(self, rhs: Vector) -> Vector {
-        Vector { x: self.x * rhs.x, y: self.y * rhs.y, z: self.z * rhs.z }
+        Vector {
+            x: self.x * rhs.x,
+            y: self.y * rhs.y,
+            z: self.z * rhs.z,
+        }
     }
 }
 
@@ -63,7 +79,11 @@ impl Mul<f32> for Vector {
     type Output = Vector;
     /// Scale the vector by some value
     fn mul(self, rhs: f32) -> Vector {
-        Vector { x: self.x * rhs, y: self.y * rhs, z: self.z * rhs }
+        Vector {
+            x: self.x * rhs,
+            y: self.y * rhs,
+            z: self.z * rhs,
+        }
     }
 }
 
@@ -71,7 +91,11 @@ impl Mul<Vector> for f32 {
     type Output = Vector;
     /// Scale the vector by some value
     fn mul(self, rhs: Vector) -> Vector {
-        Vector { x: self * rhs.x, y: self * rhs.y, z: self * rhs.z }
+        Vector {
+            x: self * rhs.x,
+            y: self * rhs.y,
+            z: self * rhs.z,
+        }
     }
 }
 
@@ -79,7 +103,11 @@ impl Mul<Point> for Vector {
     type Output = Point;
     /// Scale the vector by some value
     fn mul(self, rhs: Point) -> Point {
-        Point { x: self.x * rhs.x, y: self.y * rhs.y, z: self.z * rhs.z }
+        Point {
+            x: self.x * rhs.x,
+            y: self.y * rhs.y,
+            z: self.z * rhs.z,
+        }
     }
 }
 
@@ -87,7 +115,11 @@ impl Div for Vector {
     type Output = Vector;
     /// Divide the vectors components by the right hand side's components
     fn div(self, rhs: Vector) -> Vector {
-        Vector { x: self.x / rhs.x, y: self.y / rhs.y, z: self.z / rhs.z }
+        Vector {
+            x: self.x / rhs.x,
+            y: self.y / rhs.y,
+            z: self.z / rhs.z,
+        }
     }
 }
 
@@ -95,7 +127,11 @@ impl Div<f32> for Vector {
     type Output = Vector;
     /// Divide the vectors components by a scalar
     fn div(self, rhs: f32) -> Vector {
-        Vector { x: self.x / rhs, y: self.y / rhs, z: self.z / rhs }
+        Vector {
+            x: self.x / rhs,
+            y: self.y / rhs,
+            z: self.z / rhs,
+        }
     }
 }
 
@@ -103,7 +139,11 @@ impl Neg for Vector {
     type Output = Vector;
     /// Negate the vector
     fn neg(self) -> Vector {
-        Vector { x: -self.x, y: -self.y, z: -self.z }
+        Vector {
+            x: -self.x,
+            y: -self.y,
+            z: -self.z,
+        }
     }
 }
 
@@ -156,4 +196,3 @@ fn test_idx() {
     }
     assert!(v[1] == 5f32);
 }
-

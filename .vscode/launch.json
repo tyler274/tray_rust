@@ -1,0 +1,140 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'tray_rust'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=tray_rust"
+                ],
+                "filter": {
+                    "name": "tray_rust",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'tray_rust'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=tray_rust",
+                    "--package=tray_rust"
+                ],
+                "filter": {
+                    "name": "tray_rust",
+                    "kind": "bin"
+                }
+            },
+            "args": [
+                ".\\scenes\\cornell_box.json"
+            ],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'tray_rust'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=tray_rust",
+                    "--package=tray_rust"
+                ],
+                "filter": {
+                    "name": "tray_rust",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug example 'plane'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--example=plane",
+                    "--package=tray_rust"
+                ],
+                "filter": {
+                    "name": "plane",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in example 'plane'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--example=plane",
+                    "--package=tray_rust"
+                ],
+                "filter": {
+                    "name": "plane",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug example 'sphere'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--example=sphere",
+                    "--package=tray_rust"
+                ],
+                "filter": {
+                    "name": "sphere",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in example 'sphere'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--example=sphere",
+                    "--package=tray_rust"
+                ],
+                "filter": {
+                    "name": "sphere",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        }
+    ]
+}

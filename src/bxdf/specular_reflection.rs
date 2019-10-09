@@ -1,12 +1,12 @@
 //! Defines a BRDF that describes specular reflection
 
-use std::f32;
 use enum_set::EnumSet;
+use std::f32;
 
-use linalg::Vector;
-use film::Colorf;
-use bxdf::{self, BxDF, BxDFType};
 use bxdf::fresnel::Fresnel;
+use bxdf::{self, BxDF, BxDFType};
+use film::Colorf;
+use linalg::Vector;
 
 /// Specular reflection BRDF that implements a specularly reflective material model
 #[derive(Copy, Clone)]
@@ -14,13 +14,16 @@ pub struct SpecularReflection<'a> {
     /// Color of the reflective material
     reflectance: Colorf,
     /// Fresnel term for the reflection model
-    fresnel: &'a Fresnel,
+    fresnel: &'a dyn Fresnel,
 }
 
 impl<'a> SpecularReflection<'a> {
     /// Create a specularly reflective BRDF with the reflective color and Fresnel term
-    pub fn new(c: &Colorf, fresnel: &'a Fresnel) -> SpecularReflection<'a> {
-        SpecularReflection { reflectance: *c, fresnel: fresnel }
+    pub fn new(c: &Colorf, fresnel: &'a dyn Fresnel) -> SpecularReflection<'a> {
+        SpecularReflection {
+            reflectance: *c,
+            fresnel: fresnel,
+        }
     }
 }
 
@@ -33,7 +36,9 @@ impl<'a> BxDF for SpecularReflection<'a> {
     }
     /// We'll never exactly hit the specular reflection direction with some pair
     /// so this just returns black. Use `sample` instead
-    fn eval(&self, _: &Vector, _: &Vector) -> Colorf { Colorf::broadcast(0.0) }
+    fn eval(&self, _: &Vector, _: &Vector) -> Colorf {
+        Colorf::broadcast(0.0)
+    }
     /// Sampling the specular BRDF just returns the specular reflection direction
     /// for the light leaving along `w_o`
     fn sample(&self, w_o: &Vector, _: &(f32, f32)) -> (Colorf, Vector, f32) {
@@ -49,4 +54,3 @@ impl<'a> BxDF for SpecularReflection<'a> {
         }
     }
 }
-

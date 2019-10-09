@@ -1,5 +1,5 @@
-use std::ops::{Add, Sub, Mul, Div, Neg, Index, IndexMut};
-use linalg::{Vector, Axis};
+use linalg::{Axis, Vector};
+use std::ops::{Add, Div, Index, IndexMut, Mul, Neg, Sub};
 
 /// Point is a standard 3 component point but transforms as a point
 /// point when transformations are applied
@@ -37,7 +37,11 @@ impl Add for Point {
     type Output = Point;
     /// Add two points together
     fn add(self, rhs: Point) -> Point {
-        Point { x: self.x + rhs.x, y: self.y + rhs.y, z: self.z + rhs.z }
+        Point {
+            x: self.x + rhs.x,
+            y: self.y + rhs.y,
+            z: self.z + rhs.z,
+        }
     }
 }
 
@@ -45,7 +49,11 @@ impl Add<Vector> for Point {
     type Output = Point;
     /// Add two points together
     fn add(self, rhs: Vector) -> Point {
-        Point { x: self.x + rhs.x, y: self.y + rhs.y, z: self.z + rhs.z }
+        Point {
+            x: self.x + rhs.x,
+            y: self.y + rhs.y,
+            z: self.z + rhs.z,
+        }
     }
 }
 
@@ -53,7 +61,11 @@ impl Sub for Point {
     type Output = Vector;
     /// Subtract two points to get the vector between them
     fn sub(self, rhs: Point) -> Vector {
-        Vector { x: self.x - rhs.x, y: self.y - rhs.y, z: self.z - rhs.z }
+        Vector {
+            x: self.x - rhs.x,
+            y: self.y - rhs.y,
+            z: self.z - rhs.z,
+        }
     }
 }
 
@@ -61,7 +73,11 @@ impl Sub<Vector> for Point {
     type Output = Point;
     /// Subtract a vector from a point, translating the point by -vector
     fn sub(self, rhs: Vector) -> Point {
-        Point { x: self.x - rhs.x, y: self.y - rhs.y, z: self.z - rhs.z }
+        Point {
+            x: self.x - rhs.x,
+            y: self.y - rhs.y,
+            z: self.z - rhs.z,
+        }
     }
 }
 
@@ -69,7 +85,11 @@ impl Mul<f32> for Point {
     type Output = Point;
     /// Scale the point by some value
     fn mul(self, rhs: f32) -> Point {
-        Point { x: self.x * rhs, y: self.y * rhs, z: self.z * rhs }
+        Point {
+            x: self.x * rhs,
+            y: self.y * rhs,
+            z: self.z * rhs,
+        }
     }
 }
 
@@ -77,7 +97,11 @@ impl Mul<Point> for f32 {
     type Output = Point;
     /// Scale the vector by some value
     fn mul(self, rhs: Point) -> Point {
-        Point { x: self * rhs.x, y: self * rhs.y, z: self * rhs.z }
+        Point {
+            x: self * rhs.x,
+            y: self * rhs.y,
+            z: self * rhs.z,
+        }
     }
 }
 
@@ -85,7 +109,11 @@ impl Mul<Vector> for Point {
     type Output = Point;
     /// Scale the vector by some value
     fn mul(self, rhs: Vector) -> Point {
-        Point { x: self.x * rhs.x, y: self.y * rhs.y, z: self.z * rhs.z }
+        Point {
+            x: self.x * rhs.x,
+            y: self.y * rhs.y,
+            z: self.z * rhs.z,
+        }
     }
 }
 
@@ -93,7 +121,11 @@ impl Div for Point {
     type Output = Point;
     /// Divide the points components by the right hand side's components
     fn div(self, rhs: Point) -> Point {
-        Point { x: self.x / rhs.x, y: self.y / rhs.y, z: self.z / rhs.z }
+        Point {
+            x: self.x / rhs.x,
+            y: self.y / rhs.y,
+            z: self.z / rhs.z,
+        }
     }
 }
 
@@ -101,7 +133,11 @@ impl Div<f32> for Point {
     type Output = Point;
     /// Divide the points components by scalar
     fn div(self, rhs: f32) -> Point {
-        Point { x: self.x / rhs, y: self.y / rhs, z: self.z / rhs }
+        Point {
+            x: self.x / rhs,
+            y: self.y / rhs,
+            z: self.z / rhs,
+        }
     }
 }
 
@@ -109,7 +145,11 @@ impl Neg for Point {
     type Output = Point;
     /// Negate the point
     fn neg(self) -> Point {
-        Point { x: -self.x, y: -self.y, z: -self.z }
+        Point {
+            x: -self.x,
+            y: -self.y,
+            z: -self.z,
+        }
     }
 }
 
@@ -168,4 +208,3 @@ fn test_distance_sqr() {
     let b = Point::new(3f32, 4f32, 0f32);
     assert!(b.distance_sqr(&a) == 25f32);
 }
-

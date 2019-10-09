@@ -3,9 +3,9 @@
 //! we simply work through it with an atomic counter to track the index of the next
 //! block to work on
 
-use std::vec::Vec;
-use std::sync::atomic::{AtomicUsize, Ordering};
 use sampler::morton;
+use std::sync::atomic::{AtomicUsize, Ordering};
+use std::vec::Vec;
 
 /// The queue of blocks to be worked on shared immutably between worker threads.
 pub struct BlockQueue {
@@ -27,27 +27,43 @@ impl BlockQueue {
     /// Panics if the image is not evenly broken into blocks of dimension `dim`
     pub fn new(img: (u32, u32), dim: (u32, u32), select_blocks: (usize, usize)) -> BlockQueue {
         if img.0 % dim.0 != 0 || img.1 % dim.1 != 0 {
-            panic!("Image with dimension {:?} not evenly divided by blocks of {:?}", img, dim);
+            panic!(
+                "Image with dimension {:?} not evenly divided by blocks of {:?}",
+                img, dim
+            );
         }
         let num_blocks = (img.0 / dim.0, img.1 / dim.1);
         // TODO: the .. operator precedence is very low so we need this paren here at the moment
         // once (hopefully) it's raised we can remove the parens
         let mut blocks: Vec<(u32, u32)> = (0..num_blocks.0 * num_blocks.1)
-            .map(|i| (i % num_blocks.0, i / num_blocks.0)).collect();
+            .map(|i| (i % num_blocks.0, i / num_blocks.0))
+            .collect();
         blocks.sort_by(|a, b| morton::morton2(a).cmp(&morton::morton2(b)));
         // If we're only rendering a subset of the blocks then filter our list down
         if select_blocks.1 > 0 {
-            blocks = blocks.into_iter().skip(select_blocks.0).take(select_blocks.1).collect();
+            blocks = blocks
+                .into_iter()
+                .skip(select_blocks.0)
+                .take(select_blocks.1)
+                .collect();
         }
         if blocks.is_empty() {
             println!("Warning: This block queue is empty!");
         }
-        BlockQueue { blocks: blocks, dimensions: dim, next: AtomicUsize::new(0) }
+        BlockQueue {
+            blocks: blocks,
+            dimensions: dim,
+            next: AtomicUsize::new(0),
+        }
     }
     /// Get the dimensions of an individual block in the queue
-    pub fn block_dim(&self) -> (u32, u32) { self.dimensions }
+    pub fn block_dim(&self) -> (u32, u32) {
+        self.dimensions
+    }
     /// Get an iterator to work through the queue
-    pub fn iter(&self) -> BlockQueueIterator { BlockQueueIterator { queue: self } }
+    pub fn iter(&self) -> BlockQueueIterator {
+        BlockQueueIterator { queue: self }
+    }
     /// Get the next block in the queue or None if the queue is finished
     fn next(&self) -> Option<(u32, u32)> {
         let i = self.next.fetch_add(1, Ordering::AcqRel);
@@ -58,7 +74,9 @@ impl BlockQueue {
         }
     }
     /// Get the length of the queue
-    pub fn len(&self) -> usize { self.blocks.len() }
+    pub fn len(&self) -> usize {
+        self.blocks.len()
+    }
     /// Check if the queue is empty
     pub fn is_empty(&self) -> bool {
         self.next.load(Ordering::AcqRel) >= self.blocks.len()
@@ -71,4 +89,3 @@ impl<'a> Iterator for BlockQueueIterator<'a> {
         self.queue.next()
     }
 }
-

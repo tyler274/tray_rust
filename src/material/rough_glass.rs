@@ -23,19 +23,19 @@ use std::sync::Arc;
 
 use light_arena::Allocator;
 
-use geometry::Intersection;
-use bxdf::{BxDF, BSDF, MicrofacetTransmission, TorranceSparrow};
-use bxdf::microfacet::Beckmann;
 use bxdf::fresnel::Dielectric;
+use bxdf::microfacet::Beckmann;
+use bxdf::{BxDF, MicrofacetTransmission, TorranceSparrow, BSDF};
+use geometry::Intersection;
 use material::Material;
 use texture::Texture;
 
 /// The `RoughGlass` material describes specularly transmissive and reflective glass material
 pub struct RoughGlass {
-    reflect: Arc<Texture + Send + Sync>,
-    transmit: Arc<Texture + Send + Sync>,
-    eta: Arc<Texture + Send + Sync>,
-    roughness: Arc<Texture + Send + Sync>,
+    reflect: Arc<dyn Texture + Send + Sync>,
+    transmit: Arc<dyn Texture + Send + Sync>,
+    eta: Arc<dyn Texture + Send + Sync>,
+    roughness: Arc<dyn Texture + Send + Sync>,
 }
 
 impl RoughGlass {
@@ -44,18 +44,26 @@ impl RoughGlass {
     /// `transmit`: color of transmitted light
     /// `eta`: refractive index of the material
     /// `roughness`: roughness of the material
-    pub fn new(reflect: Arc<Texture + Send + Sync>,
-               transmit: Arc<Texture + Send + Sync>,
-               eta: Arc<Texture + Send + Sync>,
-               roughness: Arc<Texture + Send + Sync>) -> RoughGlass
-    {
-        RoughGlass { reflect: reflect, transmit: transmit, eta: eta, roughness: roughness }
+    pub fn new(
+        reflect: Arc<dyn Texture + Send + Sync>,
+        transmit: Arc<dyn Texture + Send + Sync>,
+        eta: Arc<dyn Texture + Send + Sync>,
+        roughness: Arc<dyn Texture + Send + Sync>,
+    ) -> RoughGlass {
+        RoughGlass {
+            reflect: reflect,
+            transmit: transmit,
+            eta: eta,
+            roughness: roughness,
+        }
     }
 }
 
 impl Material for RoughGlass {
-    fn bsdf<'a, 'b, 'c>(&self, hit: &Intersection<'a, 'b>,
-                        alloc: &'c Allocator) -> BSDF<'c> where 'a: 'c {
+    fn bsdf<'a, 'b, 'c>(&self, hit: &Intersection<'a, 'b>, alloc: &'c Allocator) -> BSDF<'c>
+    where
+        'a: 'c,
+    {
         let reflect = self.reflect.sample_color(hit.dg.u, hit.dg.v, hit.dg.time);
         let transmit = self.transmit.sample_color(hit.dg.u, hit.dg.v, hit.dg.time);
         let eta = self.eta.sample_f32(hit.dg.u, hit.dg.v, hit.dg.time);
@@ -69,7 +77,7 @@ impl Material for RoughGlass {
             num_bxdfs += 1;
         }
 
-        let bxdfs = alloc.alloc_slice::<&BxDF>(num_bxdfs);
+        let bxdfs = alloc.alloc_slice::<&dyn BxDF>(num_bxdfs);
         let mut i = 0;
         let fresnel = alloc.alloc(Dielectric::new(1.0, eta));
         let microfacet = alloc.alloc(Beckmann::new(roughness));
@@ -83,6 +91,3 @@ impl Material for RoughGlass {
         BSDF::new(bxdfs, eta, &hit.dg)
     }
 }
-
-
-

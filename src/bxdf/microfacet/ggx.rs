@@ -5,8 +5,8 @@
 use std::f32;
 
 use bxdf;
-use linalg::{self, Vector};
 use bxdf::microfacet::MicrofacetDistribution;
+use linalg::{self, Vector};
 
 /// GGX microfacet distribution with Smith shadowing-masking. This is the
 /// microfacet model described by [Walter et al.](https://www.cs.cornell.edu/~srm/publications/EGSR07-btdf.pdf)
@@ -27,7 +27,8 @@ impl MicrofacetDistribution for GGX {
     fn normal_distribution(&self, w_h: &Vector) -> f32 {
         if bxdf::cos_theta(w_h) > 0.0 {
             let width_sqr = f32::powf(self.width, 2.0);
-            let denom = f32::consts::PI * f32::powf(bxdf::cos_theta(w_h), 4.0)
+            let denom = f32::consts::PI
+                * f32::powf(bxdf::cos_theta(w_h), 4.0)
                 * f32::powf(width_sqr + f32::powf(bxdf::tan_theta(w_h), 2.0), 2.0);
             width_sqr / denom
         } else {
@@ -35,7 +36,10 @@ impl MicrofacetDistribution for GGX {
         }
     }
     fn sample(&self, _: &Vector, samples: &(f32, f32)) -> Vector {
-        let tan_theta_sqr = f32::powf(self.width * f32::sqrt(samples.0) / f32::sqrt(1.0 - samples.0), 2.0);
+        let tan_theta_sqr = f32::powf(
+            self.width * f32::sqrt(samples.0) / f32::sqrt(1.0 - samples.0),
+            2.0,
+        );
         let cos_theta = 1.0 / f32::sqrt(1.0 + tan_theta_sqr);
         let sin_theta = f32::sqrt(f32::max(0.0, 1.0 - cos_theta * cos_theta));
         let phi = 2.0 * f32::consts::PI * samples.1;
@@ -52,8 +56,5 @@ impl MicrofacetDistribution for GGX {
     /// `w` is the incident/outgoing light direction and `w_h` is the microfacet normal
     fn monodir_shadowing(&self, v: &Vector, w_h: &Vector) -> f32 {
         2.0 / (1.0 + f32::sqrt(1.0 + f32::powf(self.width * f32::abs(bxdf::tan_theta(v)), 2.0)))
-        
     }
 }
-
-

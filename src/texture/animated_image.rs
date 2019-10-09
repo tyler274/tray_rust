@@ -1,6 +1,6 @@
-use linalg::lerp;
 use film::Colorf;
-use texture::{Texture, Image};
+use linalg::lerp;
+use texture::{Image, Texture};
 
 /// An `AnimatedImage` texture is a `Texture` whose samples come
 /// from a series of `Image`s which are played through over time.
@@ -17,7 +17,10 @@ impl AnimatedImage {
         AnimatedImage { frames: frames }
     }
     pub fn active_keyframes(&self, time: f32) -> (usize, Option<usize>) {
-        match self.frames.binary_search_by(|&(t, _)| t.partial_cmp(&time).unwrap()) {
+        match self
+            .frames
+            .binary_search_by(|&(t, _)| t.partial_cmp(&time).unwrap())
+        {
             Ok(i) => (i, None),
             Err(i) => {
                 if i == self.frames.len() {
@@ -27,7 +30,7 @@ impl AnimatedImage {
                 } else {
                     (i - 1, Some(i))
                 }
-            },
+            }
         }
     }
 }
@@ -37,10 +40,12 @@ impl Texture for AnimatedImage {
         match self.active_keyframes(time) {
             (lo, None) => self.frames[lo].1.sample_f32(u, v, time),
             (lo, Some(hi)) => {
-                let x = (time - self.frames[lo].0)
-                    / (self.frames[hi].0 - self.frames[lo].0);
-                lerp(x, &self.frames[lo].1.sample_f32(u, v, time),
-                    &self.frames[hi].1.sample_f32(u, v, time))
+                let x = (time - self.frames[lo].0) / (self.frames[hi].0 - self.frames[lo].0);
+                lerp(
+                    x,
+                    &self.frames[lo].1.sample_f32(u, v, time),
+                    &self.frames[hi].1.sample_f32(u, v, time),
+                )
             }
         }
     }
@@ -48,13 +53,13 @@ impl Texture for AnimatedImage {
         match self.active_keyframes(time) {
             (lo, None) => self.frames[lo].1.sample_color(u, v, time),
             (lo, Some(hi)) => {
-                let x = (time - self.frames[lo].0)
-                    / (self.frames[hi].0 - self.frames[lo].0);
-                lerp(x, &self.frames[lo].1.sample_color(u, v, time),
-                    &self.frames[hi].1.sample_color(u, v, time))
+                let x = (time - self.frames[lo].0) / (self.frames[hi].0 - self.frames[lo].0);
+                lerp(
+                    x,
+                    &self.frames[lo].1.sample_color(u, v, time),
+                    &self.frames[hi].1.sample_color(u, v, time),
+                )
             }
         }
     }
 }
-
-

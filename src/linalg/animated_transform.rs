@@ -5,8 +5,8 @@ use std::ops::Mul;
 
 use bspline::BSpline;
 
-use linalg::{self, quaternion, Keyframe, Transform};
 use geometry::BBox;
+use linalg::{self, quaternion, Keyframe, Transform};
 
 /// An animated transform that blends between the keyframes in its transformation
 /// list over time.
@@ -19,7 +19,11 @@ pub struct AnimatedTransform {
 
 impl AnimatedTransform {
     /// Create an animated transformation blending between the passed keyframes
-    pub fn with_keyframes(mut keyframes: Vec<Keyframe>, knots: Vec<f32>, degree: usize) -> AnimatedTransform {
+    pub fn with_keyframes(
+        mut keyframes: Vec<Keyframe>,
+        knots: Vec<f32>,
+        degree: usize,
+    ) -> AnimatedTransform {
         // so we know what degree and so on.
         // Step through and make sure all rotations take the shortest path
         for i in 1..keyframes.len() {
@@ -29,11 +33,15 @@ impl AnimatedTransform {
                 keyframes[i].rotation = -keyframes[i].rotation;
             }
         }
-        AnimatedTransform { keyframes: vec![BSpline::new(degree, keyframes, knots)] }
+        AnimatedTransform {
+            keyframes: vec![BSpline::new(degree, keyframes, knots)],
+        }
     }
     pub fn unanimated(transform: &Transform) -> AnimatedTransform {
         let key = Keyframe::new(transform);
-        AnimatedTransform { keyframes: vec![BSpline::new(0, vec![key], vec![0.0, 1.0])] }
+        AnimatedTransform {
+            keyframes: vec![BSpline::new(0, vec![key], vec![0.0, 1.0])],
+        }
     }
     /// Compute the transformation matrix for the animation at some time point using B-Spline
     /// interpolation.
@@ -43,13 +51,12 @@ impl AnimatedTransform {
         // time as we move up
         for spline in &self.keyframes {
             let domain = spline.knot_domain();
-            let t =
-                if spline.control_points().count() == 1 {
-                    spline.control_points().next().unwrap().transform()
-                } else {
-                    let t_val = linalg::clamp(time, domain.0, domain.1);
-                    spline.point(t_val).transform()
-                };
+            let t = if spline.control_points().count() == 1 {
+                spline.control_points().next().unwrap().transform()
+            } else {
+                let t_val = linalg::clamp(time, domain.0, domain.1);
+                spline.point(t_val).transform()
+            };
             transform = t * transform;
         }
         transform
@@ -71,7 +78,11 @@ impl AnimatedTransform {
     }
     /// Check if the transform is actually animated
     pub fn is_animated(&self) -> bool {
-        self.keyframes.is_empty() || self.keyframes.iter().fold(true, |b, spline| b && spline.control_points().count() > 1)
+        self.keyframes.is_empty()
+            || self
+                .keyframes
+                .iter()
+                .fold(true, |b, spline| b && spline.control_points().count() > 1)
     }
 }
 
@@ -85,4 +96,3 @@ impl Mul for AnimatedTransform {
         rhs
     }
 }
-
